@@ -10,7 +10,7 @@ complement_list = ["TT/AA", "TA/AT", "AT/TA", "GT/CA", "CA/GT", "GA/CT", "CT/GA"
 
 
 # =============== class =============== #
-class ParameterValue:
+class Parameter:
 	""" Parameter class for one energy type """
 	def __init__(self, name):
 		# member variables
