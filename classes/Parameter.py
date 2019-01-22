@@ -6,7 +6,18 @@ import pickle
 
 # =============== variables =============== #
 parameter_list = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "5term_TA"]
-complement_list = ["TT/AA", "TA/AT", "AT/TA", "GT/CA", "CA/GT", "GA/CT", "CT/GA", "GC/CG", "CG/GC", "CC/GG"]
+complement_list = {
+	"AA/TT": "TT/AA",
+	"AT/TA": "AT/TA",
+	"TA/AT": "TA/AT",
+	"CA/GT": "TG/AC",
+	"GT/CA": "AC/TG",
+	"CT/GA": "AG/TC",
+	"GA/CT": "TC/AG",
+	"CG/GC": "CG/GC",
+	"GC/CG": "GC/CG",
+	"GG/CC": "CC/GG"
+}
 
 
 # =============== class =============== #
@@ -78,9 +89,10 @@ class Parameter:
 		if parameter_type in parameter_list:
 			# パラメータ名が含まれる場合
 			self._parameters[parameter_type] = float(parameter_val)
-		elif parameter_type in complement_list:
+		elif parameter_type in complement_list.values():
 			# パラメータが相補鎖の形式で含まれる場合
-			self._parameters[parameter_list[complement_list.index(parameter_type)]] = float(parameter_val)
+			parameter_key = [k for k, v in complement_list.items()][0]
+			self._parameters[parameter_key] = float(parameter_val)
 		elif parameter_type == "all":
 			# すべての場合、そのまま引き受ける
 			self._parameters = {x: float(y) for x, y in paramter_val.items()}
@@ -108,8 +120,9 @@ class Parameter:
 		if parameter_type in parameter_list:
 			# パラメータタイプが存在する場合
 			return self._parameters[parameter_type]
-		elif parameter_type in complement_list:
-			return self._parameters[parameter_list[complement_list.index(parameter_type)]]
+		elif parameter_type in complement_list.values():
+			parameter_key = [k for k, v in complement_list.items()][0]
+			return self._parameters[parameter_key]
 		elif parameter_type == "all":
 			# すべてのパラメータが指定された場合
 			return self._parameters
