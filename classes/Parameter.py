@@ -95,7 +95,7 @@ class Parameter:
 			self._parameters[parameter_key] = float(parameter_val)
 		elif parameter_type == "all":
 			# すべての場合、そのまま引き受ける
-			self._parameters = {x: float(y) for x, y in paramter_val.items()}
+			self._parameters = {x: float(y) for x, y in parameter_val.items()}
 		else:
 			sys.stderr.write("ERROR: undefined parameter_type in set_parameter() of ParameterData class ({0}).\n".format(parameter_type))
 			sys.exit(1)
