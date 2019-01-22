@@ -122,8 +122,8 @@ class Sequence:
 			# init_AT
 			energy += self._parameter.get_parameter("init_AT")
 			if self._sequence[0] == "T":
-				# 5term_AT
-				energy += self._parameter.get_parameter("5term_AT")
+				# 5term_TA
+				energy += self._parameter.get_parameter("5term_TA")
 				pass
 		else:
 			sys.stderr.write("ERROR: undefined initiation base pair.\n")
