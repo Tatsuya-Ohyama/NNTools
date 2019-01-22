@@ -4,10 +4,14 @@
 import sys
 import pickle
 
+# =============== variables =============== #
+parameter_list = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "5term_TA"]
+complement_list = ["TT/AA", "TA/AT", "AT/TA", "GT/CA", "CA/GT", "GA/CT", "CT/GA", "GC/CG", "CG/GC", "CC/GG"]
+
 
 # =============== class =============== #
 class ParameterValue:
-	""" Sequence class """
+	""" Parameter class for one energy type """
 	def __init__(self, name):
 		# member variables
 		self._name = ""
@@ -68,17 +72,20 @@ class ParameterValue:
 		"""
 		set parameter method
 		@param parameter_type: parameter name (all, "AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", or "5term_TA")
-		@param parameter_val: parameter value (parameter list [dH, dS, dG])
+		@param parameter_val: parameter value
 		@return self
 		"""
-		if parameter_type in self._parameters.keys:
+		if parameter_type in parameter_list:
 			# パラメータ名が含まれる場合
-			self._parameters[parameter_type] = [float(x) for x in parameter_val]
+			self._parameters[parameter_type] = float(parameter_val)
+		elif parameter_type in complement_list:
+			# パラメータが相補鎖の形式で含まれる場合
+			self._parameters[parameter_list[complement_list.index(parameter_type)]] = float(parameter_val)
 		elif parameter_type == "all":
 			# すべての場合、そのまま引き受ける
-			self._parameters = {x: [float(z) for z in y] for x, y in parameter_val.items()}
+			self._parameters = {x: float(y) for x, y in paramter_val.items()}
 		else:
-			sys.stderr.write("ERROR: undefined parameter_type in set_parameter() of ParameterData class.\n")
+			sys.stderr.write("ERROR: undefined parameter_type in set_parameter() of ParameterData class ({0}).\n".format(parameter_type))
 			sys.exit(1)
 
 		return self
@@ -95,17 +102,19 @@ class ParameterValue:
 	def get_parameter(self, parameter_type = None):
 		"""
 		return parameter
-		@param parameter_type: parameter type (None (all), dH, dS, or dG)
-		@return parameter (None(all): [dH, dS, dG], or float value of dH, dS, and dG)
+		@param parameter_type: parameter type
+		@return parameter (list for None(all) or float value for each parameter)
 		"""
-		if parameter_type in self._parameters.keys():
+		if parameter_type in parameter_list:
 			# パラメータタイプが存在する場合
 			return self._parameters[parameter_type]
+		elif parameter_type in complement_list:
+			return self._parameters[parameter_list[complement_list.index(parameter_type)]]
 		elif parameter_type == "all":
 			# すべてのパラメータが指定された場合
 			return self._parameters
 		else:
-			sys.stderr.write("ERROR: undefined parameter_type in get_parameter() of ParameterData class.\n")
+			sys.stderr.write("ERROR: undefined parameter_type in get_parameter() of ParameterData class ({0}).\n".format(parameter_type))
 			sys.exit(1)
 
 
