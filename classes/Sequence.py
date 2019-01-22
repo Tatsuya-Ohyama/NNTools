@@ -137,7 +137,7 @@ class Sequence:
 			energy += self._parameter.get_parameter(pair_type)
 
 		if self._flag_self_complementary:
-			energy = [x + y for x, y in zip(energy, self._parameter.get_parameter("all", "symmetry"))]
+			energy += self._parameter.get_parameter("symmetry")
 
 		return energy
 
