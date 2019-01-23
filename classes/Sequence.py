@@ -113,12 +113,19 @@ class Sequence:
 		return self._name
 
 
-	def get_sequence(self):
+	def get_sequence(self, sequence_type = "list"):
 		"""
 		return sequence
+		@param sequence_type: "list" or "string" (Default: list)
 		@return sequence
 		"""
-		return self._sequence
+		if sequence_type == "string":
+			return "".join(self._sequence)
+		elif sequence_type == "list":
+			return self._sequence
+		else:
+			sys.stderr.write("ERROR: undefined sequence_type at get_sequence() in Sequence class.\n")
+			sys.exit(1)
 
 
 	def get_freq(self):
