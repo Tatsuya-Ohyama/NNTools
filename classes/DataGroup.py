@@ -92,13 +92,13 @@ class DataGroup:
 		if label_type is not None:
 			if label_type == "label":
 				if label_val is not None:
-					self._datas.at[label_val].astype(data_type)
+					self._datas[label_val] = self._datas[label_val].astype(data_type)
 				else:
 					sys.stderr.write("ERROR: label_val is not defined at set_dtype() in DataGroup class.\n")
 					sys.exit(1)
 			elif label_type == "index":
 				if label_val is not None:
-					self._datas[label_val].astype(data_type)
+					self._datas[self._datas.columns[label_val]] = self._datas[self._datas.columns[label_val]].astype(data_type)
 				else:
 					sys.stderr.write("ERROR: label_val is not defined at set_dtype() in DataGroup class.\n")
 					sys.exit(1)
