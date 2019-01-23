@@ -7,7 +7,7 @@ import pickle
 from classes.Parameter import Parameter
 
 # =============== variable =============== #
-BASE_PAIR = {"A": "T", "T": "A", "G": "C", "C": "G", }
+BASE_PAIR = {"A": "T", "T": "A", "G": "C", "C": "G"}
 parameter_list = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "5term_TA"]
 complement_list = {
 	"AA/TT": "TT/AA",
@@ -149,6 +149,13 @@ class Sequence:
 			"symmetry": 0,
 			"5term_TA": 0
 		}
+		if self._sequence[0] in ["G", "C"]:
+			freq["init_GC"] += 1
+		elif self._sequence[0] in ["A", "T"]:
+			freq["init_AT"] += 1
+			if self._sequence[0] == "T":
+				freq["5term_TA"] += 1
+
 		for base_idx in range(len(self._sequence) - 1):
 			pair_forward = self._sequence[base_idx] + self._sequence[base_idx + 1]
 			pair_reverse = BASE_PAIR[self._sequence[base_idx]] + BASE_PAIR[self._sequence[base_idx + 1]]
