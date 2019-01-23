@@ -8,6 +8,19 @@ from classes.Parameter import Parameter
 
 # =============== variable =============== #
 BASE_PAIR = {"A": "T", "T": "A", "G": "C", "C": "G", }
+parameter_list = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "5term_TA"]
+complement_list = {
+	"AA/TT": "TT/AA",
+	"AT/TA": "AT/TA",
+	"TA/AT": "TA/AT",
+	"CA/GT": "TG/AC",
+	"GT/CA": "AC/TG",
+	"CT/GA": "AG/TC",
+	"GA/CT": "TC/AG",
+	"CG/GC": "CG/GC",
+	"GC/CG": "GC/CG",
+	"GG/CC": "CC/GG"
+}
 
 
 # =============== class =============== #
@@ -106,6 +119,38 @@ class Sequence:
 		@return sequence
 		"""
 		return self._sequence
+
+
+	def get_freq(self):
+		"""
+		return pair frequency
+		@return pair frequency list
+		"""
+		freq = {
+			"AA/TT": 0,
+			"AT/TA": 0,
+			"TA/AT": 0,
+			"CA/GT": 0,
+			"GT/CA": 0,
+			"CT/GA": 0,
+			"GA/CT": 0,
+			"CG/GC": 0,
+			"GC/CG": 0,
+			"GG/CC": 0,
+			"init_GC": 0,
+			"init_AT": 0,
+			"symmetry": 0,
+			"5term_TA": 0
+		}
+		for base_idx in range(len(self._sequence) - 1):
+			pair_forward = self._sequence[base_idx] + self._sequence[base_idx + 1]
+			pair_reverse = BASE_PAIR[self._sequence[base_idx]] + BASE_PAIR[self._sequence[base_idx + 1]]
+			pair_type = "/".join([pair_forward, pair_reverse])
+			if pair_type not in freq.keys():
+				pair_type = [k for k, v in complement_list.items() if v == pair_type][0]
+			freq[pair_type] += 1
+
+		return freq
 
 
 	def get_energy(self):
