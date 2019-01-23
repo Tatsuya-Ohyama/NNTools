@@ -55,6 +55,7 @@ class DataGroup:
 		"""
 		add data method
 		@param data: additional data
+		@param data_type: dtype (Default: "object")
 		@return self
 		"""
 		if data is not None:
@@ -64,16 +65,16 @@ class DataGroup:
 		return self
 
 
-	def set_label(self, label_type, label_list):
+	def set_label(self, label_direction, label_list):
 		"""
 		set label for row or column
-		@param label_type: "row" or "column"
+		@param label_direction: "row" or "column"
 		@param label_list: label list
 		@return self
 		"""
-		if label_type == "row":
+		if label_direction == "row":
 			self._datas.index = label_list
-		elif label_type == "column":
+		elif label_direction == "column":
 			self._datas.columns = label_list
 		else:
 			sys.stderr.write("ERROR: undefined label_type at set_label() in DataGroup class.\n")
@@ -128,15 +129,15 @@ class DataGroup:
 		return self
 
 
-	def get_label(self, label_type):
+	def get_label(self, label_direction):
 		"""
 		return label list
-		@param label_type: "row" or "column"
+		@param label_direction: "row" or "column"
 		@return label list
 		"""
-		if label_type == "row":
+		if label_direction == "row":
 			return self._datas.index
-		elif label_type == "column":
+		elif label_direction == "column":
 			return self._datas.columns
 		else:
 			sys.stderr.write("ERROR: undefined label_type at get_label() in DataGroup class.\n")
