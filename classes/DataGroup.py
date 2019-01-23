@@ -196,14 +196,27 @@ class DataGroup:
 		return self._datas
 
 
-	def get_factor(self,deg = 1):
+	def get_factor(self, label_type, label_x, label_y, deg = 1):
 		"""
 		return list of optimized slope factor, intercept, and R2 value
+		@param label_type: "index" or "label"
+		@param label_x
+		@param label_y
 		@param deg: Degree of the fitting polynomial
 		@return self: [polynomial_coefficients, residuals, r2]
 		"""
-		x = self._datas[self._datas.columns[0]]
-		y = self._datas[self._datas.columns[1]]
+		x = None
+		y = None
+		if label_type == "index":
+			x = self._datas[self._datas.columns[label_x]]
+			y = self._datas[self._datas.columns[label_y]]
+		elif label_type == "label":
+			x = self._datas[label_x]
+			y = self._datas[label_y]
+		else:
+			sys.stderr.write("ERROR: undefined label_type at get_factor() in DataGroup class.\n")
+			sys.exit(1)
+
 		coeff = np.polyfit(x, y, deg)
 		r2 = np.corrcoef(x, y)[0,1]
 		return coeff.tolist() + [r2]
