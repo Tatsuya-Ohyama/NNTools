@@ -129,6 +129,42 @@ class DataGroup:
 		return self
 
 
+	def remove_data(self, label_direction, label_type, label_name):
+		"""
+		remove data
+		@param label_direction: "row" or "column"
+		@param label_type: "index" or "label"
+		@param label_name: label name
+		@return self
+		"""
+		if label_direction == "row":
+			# 行の削除
+			if label_type == "index":
+				# インデックス指定
+				self._datas = self._datas.drop(self._datas.index[label_name], axis = 0)
+			elif label_type == "label":
+				# ラベル指定
+				self._datas = self._datas.drop(label_name, axis = 0)
+			else:
+				sys.stderr.write("ERROR: undefined label_type at remove_data() in DataGroup class.\n")
+				sys.exit(1)
+		elif label_direction == "column":
+			# 列の削除
+			if label_type == "index":
+				# インデックス指定
+				self._datas = self._datas.drop(self._datas.columns[label_name], axis = 1)
+			elif label_type == "label":
+				# ラベル指定
+				self._datas = self._datas.drop(label_name, axis = 1)
+			else:
+				sys.stderr.write("ERROR: undefined label_type at remove_data() in DataGroup class.\n")
+				sys.exit(1)
+		else:
+			sys.stderr.write("ERROR: undefined label_direction at remove_data() in DataGroup class.\n")
+			sys.exit(1)
+		return self
+
+
 	def get_label(self, label_direction):
 		"""
 		return label list
