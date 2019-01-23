@@ -103,6 +103,20 @@ class Parameter:
 		return self
 
 
+	def remove_parameter(self, parameter_name):
+		"""
+		remove parameter
+		@param parameter_name: parameter name
+		@return self
+		"""
+		if parameter_name in self._parameters.keys():
+			del(self._parameters[parameter_name])
+		else:
+			sys.stderr.write("ERROR: {0} does not found.\n".format(parameter_name))
+			sys.exit(1)
+		return self
+
+
 	def get_name(self):
 		"""
 		return name
