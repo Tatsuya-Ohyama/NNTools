@@ -123,12 +123,9 @@ class Parameter:
 		elif parameter_type in complement_list.values():
 			parameter_key = [k for k, v in complement_list.items()][0]
 			return self._parameters[parameter_key]
-		elif parameter_type == "all":
+		else:
 			# すべてのパラメータが指定された場合
 			return self._parameters
-		else:
-			sys.stderr.write("ERROR: undefined parameter_type in get_parameter() of ParameterData class ({0}).\n".format(parameter_type))
-			sys.exit(1)
 
 
 
