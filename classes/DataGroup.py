@@ -118,7 +118,7 @@ class DataGroup:
 		@param new_val: value
 		@return self
 		"""
-		if labe_type == "label":
+		if label_type == "label":
 			self._datas.at[index, column] = new_val
 		elif label_type == "index":
 			self._datas.iat[index, column] = new_val
