@@ -120,7 +120,11 @@ class DataGroup:
 		@return self
 		"""
 		if label_type == "label":
-			self._datas.at[index, column] = new_val
+			if index in self._datas.index and column in self._datas.columns:
+				self._datas.at[index, column] = new_val
+			else:
+				sys.stderr.write("ERROR: index '{0}', column '{1}' does not found.\n".format(index, column))
+				sys.exit(1)
 		elif label_type == "index":
 			self._datas.iat[index, column] = new_val
 		else:
@@ -218,8 +222,18 @@ class DataGroup:
 			sys.exit(1)
 
 		coeff = np.polyfit(x, y, deg)
-		r2 = np.corrcoef(x, y)[0,1]
+		r2 = np.corrcoef(x, y)[0,1] ** 2
 		return coeff.tolist() + [r2]
+
+
+	def save_csv(self, output_file):
+		"""
+		save to csv file
+		@param output_file: output file path
+		@return self
+		"""
+		self._datas.to_csv(output_file, header = True, index = True)
+		return self
 
 
 # =============== main =============== #
