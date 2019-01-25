@@ -51,9 +51,10 @@ class DataGroup:
 		return self
 
 
-	def add_data(self, data, data_type = None):
+	def add_data(self, direction, data, data_type = None):
 		"""
 		add data method
+		@param direction: "row" or "column"
 		@param data: additional data
 		@param data_type: dtype (Default: "object")
 		@return self
@@ -61,7 +62,27 @@ class DataGroup:
 		if data is not None:
 			if data_type is None:
 				data_type = "object"
-			self._datas = self._datas.append(pd.Series(data, dtype = data_type), ignore_index = True)
+			if direction == "row":
+				# add row
+				if self._datas.shape == (0,0):
+					# empty DataFrame
+					self._datas = pd.DataFrame([data], dtype = data_type)
+				else:
+					# add
+					new_row = pd.DataFrame([data], dtype = data_type)
+					new_row.columns = self._datas.columns
+					self._datas = pd.concat([self._datas, new_row], axis = 0)
+					self._datas.index = range(len(self._datas.index))
+			elif direction == "column":
+				# add column
+				if self._datas.shape == (0,0):
+					# empty DataFrame
+					self._datas = pd.DataFrame(data, dtype = data_type)
+				else:
+					# add
+					new_column = pd.DataFrame(data, dtype = data_type)
+					new_column.index = self._datas.index
+					self._datas = pd.concat([self._datas, new_column], axis = 1)
 		return self
 
 
