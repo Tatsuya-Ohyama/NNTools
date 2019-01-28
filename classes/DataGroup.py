@@ -51,10 +51,11 @@ class DataGroup:
 		return self
 
 
-	def add_data(self, direction, data, data_type = None):
+	def add_data(self, direction, name, data, data_type = None):
 		"""
 		add data method
 		@param direction: "row" or "column"
+		@param name: column name
 		@param data: additional data
 		@param data_type: dtype (Default: "object")
 		@return self
@@ -66,21 +67,20 @@ class DataGroup:
 				# add row
 				if self._datas.shape == (0,0):
 					# empty DataFrame
-					self._datas = pd.DataFrame([data], dtype = data_type)
+					self._datas = pd.DataFrame([data], index = name, dtype = data_type)
 				else:
 					# add
-					new_row = pd.DataFrame([data], dtype = data_type)
+					new_row = pd.DataFrame([data], index = name, dtype = data_type)
 					new_row.columns = self._datas.columns
 					self._datas = pd.concat([self._datas, new_row], axis = 0)
-					self._datas.index = range(len(self._datas.index))
 			elif direction == "column":
 				# add column
 				if self._datas.shape == (0,0):
 					# empty DataFrame
-					self._datas = pd.DataFrame(data, dtype = data_type)
+					self._datas = pd.DataFrame(data, columns = name, dtype = data_type)
 				else:
 					# add
-					new_column = pd.DataFrame(data, dtype = data_type)
+					new_column = pd.DataFrame(data, columns = name, dtype = data_type)
 					new_column.index = self._datas.index
 					self._datas = pd.concat([self._datas, new_column], axis = 1)
 		return self
@@ -243,8 +243,9 @@ class DataGroup:
 			sys.exit(1)
 
 		coeff = np.polyfit(x, y, deg)
-		r2 = np.corrcoef(x, y)[0,1] ** 2
-		return coeff.tolist() + [r2]
+		r1 = np.corrcoef(x, y)[0,1]
+		r2 = r1 ** 2
+		return coeff.tolist() + [r1, r2]
 
 
 	def save_csv(self, output_file):
