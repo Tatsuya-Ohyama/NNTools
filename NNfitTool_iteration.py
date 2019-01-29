@@ -73,88 +73,129 @@ if __name__ == '__main__':
 	point_datas[2] = copy.deepcopy(point_datas[0])
 
 
-	# import random
-	# parameter_types = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "5term_TA"]
-	# random.shuffle(parameter_types)
+	# optimize parameter
 	label_base = ["Sequence", "Exp."]
-	for idx in range(3):
-		flag_first = True
-		diff_r2 = [args.threshold_increment + 1 for i in range(3)]
-		parameter_base = parameters[idx + 3]
-		parameter_high = None
-		parameter_low = None
-		point_data = point_datas[idx]
+	for energy_idx in range(3):
+		# loop for energy type: dH, dS, and dG
+		point_data = point_datas[energy_idx]
 
-		for parameter_type in parameter_base.get_parameter().keys():
-		# for parameter_type in parameter_types:
-			# optimize for each parameter
-			increment = args.initial_increment
-			diff_r2_prev = 1.0
-			print("=" * 30, "PARAMETER", parameter_type, "=" * 30)
-			direction = 0
-			while args.threshold_increment < increment:
-				# loop while r2 is larger than threshold
+		parameter_types = [parameter_type for parameter_type in parameters[energy_idx + 3].get_parameter().keys()]
+		candidate_parameters = [Parameter(parameter_type) for parameter_type in parameter_types]
+		flag_change = [True for x in parameter_types]
+		increment = args.initial_increment
+		direction = [False for x in parameter_types]
 
-				if direction == 0:
-					# calculate base parameter
-					point_data.add_data("column", ["Base"], [sequence.set_parameter(parameter_base).get_energy() for sequence in sequences], np.float)
+		while :
+			# loop while r2 or increment value .....
+			r2_eval = []
+			for parameter_idx, parameter_type in enumerate(parameter_types):
+				# loop for parameters
 
-				if 0 <= direction <= 1:
-					# calculate high parameter
-					parameter_high = Parameter("High").set_parameter("all", {k: v + increment if k == parameter_type else v for k, v in parameter_base.get_parameter().items()})
-					point_data.add_data("column", ["High"], [sequence.set_parameter(parameter_high).get_energy() for sequence in sequences], np.float)
+				if flag_change[parameter_idx]:
+					# for parameter changed with current increment
 
-				if -1 <= direction <= 0:
-					# calculate low parameter
-					parameter_low = Parameter("Low").set_parameter("all", {k: v - increment if k == parameter_type else v for k, v in parameter_base.get_parameter().items()})
-					point_data.add_data("column", ["Low"], [sequence.set_parameter(parameter_low).get_energy() for sequence in sequences], np.float)
+					# change parameter
+					if direction[parameter_idx] == False:
+						# not determine direction
+						parameter_base = Parameter(parameter_type + "_base")
+						parameter_base.set_parameter({k: v if k == parameter.get_name() else v for k, v in parameter_base.get_parameter().items()})
+						parameter_plus = Parameter(parameter_type + "_plus")
+						parameter_plus.set_parameter({k: v + increment if k == parameter.get_name() else v for k, v in parameter_base.get_parameter().items()})
+						parameter_minus = Parameter(parameter_type + "_minus")
+						parameter_minus.set_parameter({k: v - increment if k == parameter.get_name() else v for k, v in parameter_base.get_parameter().items()})
 
-				r2 = [point_data.get_factor("label", "Exp.", "Base")[3], point_data.get_factor("label", "Exp.", "High")[3], point_data.get_factor("label", "Exp.", "Low")[3]]
-				diff_r2 = [abs(x - 1.0) for x in r2]
-				print("parameter", parameter_base.get_parameter()[parameter_type], parameter_high.get_parameter()[parameter_type], parameter_low.get_parameter()[parameter_type])
+						# add energy
+						point_data.add_data("column", [parameter_type + "_base"], [sequence.set_parameter(parameter_plus).get_energy() for sequence in sequences], np.float)
+						point_data.add_data("column", [parameter_type + "_plus"], [sequence.set_parameter(parameter_plus).get_energy() for sequence in sequences], np.float)
+						point_data.add_data("column", [parameter_type + "_minus"], [sequence.set_parameter(parameter_minus).get_energy() for sequence in sequences], np.float)
 
-				print("diff_r2", diff_r2)
-				if min(diff_r2) == diff_r2[0]:
-					# When diff_r2 value for base parameter is closest to 1, change increment
-					increment /= 2
-					direction = 0
-					point_data.remove_data("column", "label", "Base")
-					point_data.remove_data("column", "label", "High")
-					point_data.remove_data("column", "label", "Low")
-					continue
-					print("even")
-				elif min(diff_r2) == diff_r2[1]:
-					# When diff_r2 value for high parameter is closest to 1, update base parameter to high parameter
-					parameter_base = parameter_high
-					diff_r2[2] = diff_r2[0]
-					diff_r2[0] = diff_r2[1]
-					direction = 1
-					point_data.remove_data("column", "label", "Low")
-					point_data.set_label("column", ["Sequence", "Exp.", "Low", "Base"])
-					print("high")
-				elif min(diff_r2) == diff_r2[2]:
-					# When diff_r2 value for low parameter is closest to 1, update base parameter to low parameter
-					parameter_base = parameter_low
-					diff_r2[1] = diff_r2[0]
-					diff_r2[0] = diff_r2[2]
-					point_data.remove_data("column", "label", "High")
-					point_data.set_label("column", ["Sequence", "Exp.", "High", "Base"])
-					direction = -1
-					print("low")
-				else:
-					# When all diff_r2 is the same even if parameter is changed
-					sys.stderr.write("R2 value converged.\n")
-					print("r2", point_data.get_factor("label", "Exp.", "Base"))
-					point_data.remove_data("column", "label", "Base")
-					point_data.remove_data("column", "label", "High")
-					point_data.remove_data("column", "label", "Low")
-					direction = 0
-					break
-				point_data.save_csv("tmp.csv")
+						# calculate r2 & determine direction
+						diff_r2 = []
+						diff_r2.append(abs(1 - point_data.get_factor("Exp.", parameter_type + "_base")[3]))
+						diff_r2.append(abs(1 - point_data.get_factor("Exp.", parameter_type + "_plus")[3]))
+						diff_r2.append(abs(1 - point_data.get_factor("Exp.", parameter_type + "_minus")[3]))
+						min_idx = [i for i, x in enumerate(diff_r2) if min(diff_r2) == x]
+						if len(min_idx) != 1 or min_idx[0] == 0:
+							# When all diff_r2 is the same even if parameter is changed
+							# When diff_r2 value for base parameter is closest to 1, change increment
+							flag_change[parameter_idx] = False
+							r2_eval.append(diff_r2[0])
 
-				diff_r2_prev = min(diff_r2)
 
-		parameters[idx + 3] = parameter_base
+						elif min_idx[0] == 1:
+							# When diff_r2 value for high parameter is closest to 1, update base parameter to high parameter
+							increment[parameter_idx] *= 1
+							candidate_parameters[parameter_idx] = parameter_high
+							point_data.remove_data(parameter_type + "_minus")
+							point_data.set_label("column", [parameter_type for x in point_data.get_label("column") if x == parameter_type + "_plus"])
+							direction[parameter_idx] = True
+							r2_eval.append(diff_r2[1])
+
+						elif min_idx[0] == 2:
+							# When diff_r2 value for low parameter is closest to 1, update base parameter to low parameter
+							increment[parameter_idx] *= -1
+							candidate_parameters[parameter_idx] = parameter_low
+							point_data.remove_data(parameter_type + "_plus")
+							point_data.set_label("column", [parameter_type for x in point_data.get_label("column") if x == parameter_type + "_minus"])
+							direction[parameter_idx] = True
+							r2_eval.append(diff_r2[2])
+
+						else:
+							sys.stderr.write("ERROR: undefined condition.\n")
+							sys.exit(1)
+
+					else:
+						"""
+						ここの実装
+						"""
+						# determined direction
+						parameter = Parameter(parameter_type + "_new")
+						parameter.set_parameter({k: v if k == parameter.get_name() else v for k, v in parameters[parameter_idx].get_parameter().items()})
+
+						# add energy
+						point_data.add_data("column", [parameter_type + "_base"], [sequence.set_parameter(parameter_plus).get_energy() for sequence in sequences], np.float)
+
+						# calculate r2 & determine direction
+						diff_r2 = []
+						diff_r2.append(abs(1 - point_data.get_factor("Exp.", parameter_type + "_base")[3]))
+						diff_r2.append(abs(1 - point_data.get_factor("Exp.", parameter_type + "_plus")[3]))
+						diff_r2.append(abs(1 - point_data.get_factor("Exp.", parameter_type + "_minus")[3]))
+						min_idx = [i for i, x in enumerate(diff_r2) if min(diff_r2) == x]
+						if len(min_idx) != 1 or min_idx[0] == 0:
+							# When all diff_r2 is the same even if parameter is changed
+							# When diff_r2 value for base parameter is closest to 1, change increment
+							flag_change[parameter_idx] = False
+
+
+						elif min_idx[0] == 1:
+							# When diff_r2 value for high parameter is closest to 1, update base parameter to high parameter
+							increment[parameter_idx] *= 1
+							candidate_parameters[parameter_idx] = parameter_high
+							point_data.remove_data(parameter_type + "_minus")
+							point_data.set_label("column", [parameter_type for x in point_data.get_label("column") if x == parameter_type + "_plus"])
+							direction[parameter_idx] = True
+
+						elif min_idx[0] == 2:
+							# When diff_r2 value for low parameter is closest to 1, update base parameter to low parameter
+							increment[parameter_idx] *= -1
+							candidate_parameters[parameter_idx] = parameter_low
+							point_data.remove_data(parameter_type + "_plus")
+							point_data.set_label("column", [parameter_type for x in point_data.get_label("column") if x == parameter_type + "_minus"])
+							direction[parameter_idx] = True
+
+						else:
+							sys.stderr.write("ERROR: undefined condition.\n")
+							sys.exit(1)
+
+
+			if len([True for x in flag_change if True]) == 0:
+				# When all parameter did not changed, increment change
+				increment /= 2
+				flag_change = [True for x in flag_change]
+
+
+
+
 
 
 
