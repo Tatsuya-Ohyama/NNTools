@@ -102,6 +102,24 @@ class DataGroup:
 			sys.exit(1)
 
 
+	def rename_label(self, direction, old_name, new_name):
+		"""
+		rename label
+		@param direction: "row" or "column"
+		@param old_name: oldname
+		@param new_name: new name
+		@return self
+		"""
+		if direction == "row":
+			self._datas.rename(index = {old_name : new_name})
+		elif direction == "column":
+			self._datas.rename(columns = {old_name : new_name})
+		else:
+			sys.stderr.write("ERROR: undefined direction at rename_label() in DataGroup().\n")
+			sys.exit(1)
+		return self
+
+
 	def set_dtype(self, data_type, label_type = None, label_val = None):
 		"""
 		set dtype
