@@ -27,7 +27,6 @@ from classes.DataGroup import DataGroup
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description = "NNfitTool.py", formatter_class=argparse.RawTextHelpFormatter)
 	parser.add_argument("-i", dest = "input_file", metavar = "INPUT.csv", required = True, help = "sequence and experimental value file")
-	parser.add_argument("-r", dest = "parameter_file", metavar = "PARAMETER.csv", required = True, help = "initial parameter file")
 	parser.add_argument("-o", dest = "output_file", metavar = "OUTPUT.csv", required = True, help = "output file")
 	parser.add_argument("-O", dest = "flag_overwrite", action = "store_true", default = False, help = "overwrite forcibly")
 	parser.add_argument("-d", dest = "threshold_increment", metavar = "THRESHOLD", type = float, default = 0.00001, help = "difference threshold of increment for searching (Default: 0.00001)")
@@ -35,23 +34,9 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 
 	check_exist(args.input_file, 2)
-	check_exist(args.parameter_file, 2)
 
-	# reading parameter
+	# initial parameter
 	parameters = [Parameter("dH"), Parameter("dS"), Parameter("dG"), Parameter("dH_opt"), Parameter("dS_opt"), Parameter("dG_opt")]
-	with open(args.parameter_file, "r") as obj_input:
-		reader = csv.reader(obj_input)
-
-		# Ignore line number 1 (header) in CSV
-		next(reader)
-
-		for line_val in reader:
-			parameters[0].set_parameter(line_val[0], line_val[1])
-			parameters[1].set_parameter(line_val[0], line_val[2])
-			parameters[2].set_parameter(line_val[0], line_val[3])
-			parameters[3].set_parameter(line_val[0], line_val[1])
-			parameters[4].set_parameter(line_val[0], line_val[2])
-			parameters[5].set_parameter(line_val[0], line_val[3])
 
 	# reading sequence and experimental data
 	sequences = []
