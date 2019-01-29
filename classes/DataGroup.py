@@ -111,9 +111,9 @@ class DataGroup:
 		@return self
 		"""
 		if direction == "row":
-			self._datas.rename(index = {old_name : new_name})
+			self._datas = self._datas.rename(index = {old_name : new_name})
 		elif direction == "column":
-			self._datas.rename(columns = {old_name : new_name})
+			self._datas = self._datas.rename(columns = {old_name : new_name})
 		else:
 			sys.stderr.write("ERROR: undefined direction at rename_label() in DataGroup().\n")
 			sys.exit(1)
