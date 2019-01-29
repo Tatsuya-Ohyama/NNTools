@@ -111,7 +111,7 @@ class Parameter:
 		@return self
 		"""
 		if parameter_name in self._parameters.keys():
-			self._parameters[parameter_name] = parameter_value
+			self._parameters[parameter_name] = parameter_val
 		else:
 			sys.stderr.write("ERROR: undefined parameter name at update_parameter() in Parameter class.\n")
 			sys.exit(1)
