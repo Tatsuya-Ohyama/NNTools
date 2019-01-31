@@ -103,22 +103,6 @@ class Parameter:
 		return self
 
 
-	def update_parameter(self, parameter_name, parameter_val):
-		"""
-		change parameter value
-		@param parameter_name: parameter name
-		@param parameter_val: parameter value
-		@return self
-		"""
-		if parameter_name in self._parameters.keys():
-			self._parameters[parameter_name] = parameter_val
-		else:
-			sys.stderr.write("ERROR: undefined parameter name at update_parameter() in Parameter class.\n")
-			sys.exit(1)
-
-		return self
-
-
 	def remove_parameter(self, parameter_name):
 		"""
 		remove parameter
