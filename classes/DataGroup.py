@@ -291,8 +291,6 @@ class DataGroup:
 
 
 
-import pickle
-
 class DataGroup2:
 	""" DataGroup class (Ver. 2) """
 	def __init__(self, name):
@@ -346,18 +344,22 @@ class DataGroup2:
 		if data_type is None:
 			return self._sequences
 		elif data_type == "sequence":
-			return [x.get_sequence() for x in self._sequence]
+			return [x.get_sequence() for x in self._sequences]
 
 
-	def get_exp_value(self, flag_title = False):
+	def get_energy(self, flag_sequence = False, obj_parameters = []):
 		"""
 		return experimental value list
-		@return experimental value list
+		@param flag_sequence: return energy with sequence (Default: False)
+		@param obj_parameters: Parameter object list (Default: [])
+		@return energy value list
 		"""
-		if flag_title:
-			return [[sequence.get_sequence(), energy] for sequence, energy in zip(self._sequence, self._energy)]
-		else:
-			return self._energy
+		energy = []
+		if flag_sequence:
+			energy = [[sequence.get_sequence("string") for sequence in self._sequences]]
+		energy += [self._energy]
+		energy += [[sequence.set_parameter(parameter).get_energy() for sequence in self._sequences] for parameter in obj_parameters]
+		return energy
 
 
 	def get_stat(self, obj_parameter, data_type = None, deg = 1):
@@ -368,11 +370,10 @@ class DataGroup2:
 		@param deg:
 		@return statistics value or return [r, r2, slope, intercept, diff_abs, diff_mean] list when data_type is None
 		"""
-		energy = [sequence.set_parameter(obj_parameter).get_energy() for sequence in self._sequence]
 		x = np.array(self._energy)
-		y = np.array(energy)
-		result = [float(x) for x in np.polyfit(x, y, deg).tolist]
-		result.append(np.correff(x, y)[0, 1])
+		y = np.array([sequence.set_parameter(obj_parameter).get_energy() for sequence in self._sequences])
+		result = [float(x) for x in np.polyfit(x, y, deg).tolist()]
+		result.append(np.corrcoef(x, y)[0, 1])
 		result.append(result[-1] ** 2)
 		result.append(np.abs(x - y))
 		result.append(np.mean(x - y))
