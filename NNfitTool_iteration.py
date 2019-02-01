@@ -36,10 +36,11 @@ if __name__ == '__main__':
 	check_exist(args.input_file, 2)
 
 	# initial parameter
-	parameters = [Parameter("dH"), Parameter("dS"), Parameter("dG")]
+	exp_label = ["dH", "dS", "dG"]
+	parameters = [Parameter(label) for label in exp_label]
 
 	# reading sequence and experimental data
-	exp_datas = [DataGroup2("dH"), DataGroup2("dS"), DataGroup2("dG")]
+	exp_datas = [DataGroup2(label) for label in exp_label]
 	with open(args.input_file, "r") as obj_input:
 		reader = csv.reader(obj_input)
 
@@ -56,7 +57,7 @@ if __name__ == '__main__':
 	# optimize parameter
 	for exp_idx in range(3):
 		# loop for energy type: dH, dS, and dG
-		print("=============== Fitting {0} ===============".format(parameters[exp_idx].get_name()))
+		print("=============== Fitting {0} ===============".format(exp_label[exp_idx]))
 		point_data = exp_datas[exp_idx]
 
 		parameter_types = [parameter_type for parameter_type in parameters[exp_idx].get_parameter().keys()]
@@ -66,10 +67,10 @@ if __name__ == '__main__':
 
 		evaluation_val = [0.0 for x in parameter_types]
 		evaluation_prev = [0.0 for x in parameter_types]
-		change_list = []
 		cnt_i = 0
 		while args.threshold_increment < increment:
 			# loop while increment is larger than threshold
+			cnt_i += 1
 			for parameter_idx, parameter_type in enumerate(parameter_types):
 				# loop for parameters
 				if direction[parameter_idx] == False:
@@ -136,11 +137,11 @@ if __name__ == '__main__':
 				else:
 					sys.stderr.write("ERROR: undefined condition.\n")
 					sys.exit(1)
+
 			print("-" * 58)
+			print("{0}     Iteration: {1} (dt = {2})".format(exp_label[exp_idx], cnt_i, increment))
 
 			# evaluation for error
-			cnt_i += 1
-			print("{0}     Iteration: {1} (dt = {2})".format(parameters[exp_idx].get_name(), cnt_i, increment))
 			evaluation_diff = [abs(x - y) for x, y in zip(evaluation_prev, evaluation_val)]
 			max_val = max(evaluation_diff)
 
