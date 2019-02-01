@@ -366,10 +366,10 @@ class DataGroup2:
 	def get_stat(self, obj_parameter, data_type = None, deg = 1):
 		"""
 		return statistics
-		@param data_type: None, "r", "r2", "slope", "intercept", "diff_abs", "diff_mean", "diff_sum" (Default: None)
+		@param data_type: None, "r", "r2", "slope", "intercept", "diff_abs", "diff_mean", "diff_sum, diff_square" (Default: None)
 		@param obj_parameter: degree of the fitting polynomial (Default: 1)
 		@param deg:
-		@return statistics value or return [r, r2, slope, intercept, diff_abs, diff_mean] list when data_type is None
+		@return statistics value or return [r, r2, slope, intercept, diff_abs, diff_mean, diff_sum, diff_square] list when data_type is None
 		"""
 		x = np.array(self._energy)
 		y = np.array([sequence.set_parameter(obj_parameter).get_energy() for sequence in self._sequences])
