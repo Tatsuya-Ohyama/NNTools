@@ -138,7 +138,7 @@ if __name__ == '__main__':
 					sys.stderr.write("ERROR: undefined condition.\n")
 					sys.exit(1)
 
-			print("-" * 58)
+			print("-" * 64)
 			print("{0}     Iteration: {1} (dt = {2})".format(exp_label[exp_idx], cnt_i, increment))
 
 			# evaluation for error
@@ -155,13 +155,13 @@ if __name__ == '__main__':
 					parameter.set_parameter(new_parameter_type, copy.deepcopy(new_parameter_val))
 				parameters[exp_idx] = parameters_opt[max_val_idx]
 
-				print("{0:^8} {1:^10} {2:^10} {3:^10} {4:^10} {5:^5}".format("Type", "Parameter", "e1", "e2", "e_diff", "Adopt"))
-				print("{0:-^8} {1:-^10} {2:-^10} {3:-^10} {4:-^10} {5:-^5}".format("", "", "", "", "", ""))
+				print("{0:^8} {1:^10} {2:^12} {3:^12} {4:^12} {5:^5}".format("Type", "Parameter", "e1", "e2", "e_diff", "Adopt"))
+				print("{0:-^8} {1:-^10} {2:-^12} {3:-^12} {4:-^12} {5:-^5}".format("", "", "", "", "", ""))
 				for i, (p, e1, e2, e_diff) in enumerate(zip(parameter_types, evaluation_prev, evaluation_val, evaluation_diff)):
 					if i == max_val_idx:
-						print("{0:<8} {1:>10.3f} {2:>10.3f} {3:>10.3f} {4:>10.3f} {5:^5}".format(p, parameters[exp_idx].get_parameter(p), e1, e2, e_diff, "O"))
+						print("{0:<8} {1:>10.3f} {2:>12.3f} {3:>12.3f} {4:>12.3f} {5:^5}".format(p, parameters[exp_idx].get_parameter(p), e1, e2, e_diff, "O"))
 					else:
-						print("{0:<8} {1:>10.3f} {2:>10.3f} {3:>10.3f} {4:>10.3f}".format(p, parameters[exp_idx].get_parameter(p), e1, e2, e_diff))
+						print("{0:<8} {1:>10.3f} {2:>12.3f} {3:>12.3f} {4:>12.3f}".format(p, parameters[exp_idx].get_parameter(p), e1, e2, e_diff))
 				print("")
 				evaluation_prev = [evaluation_val[max_val_idx] for parameter in parameter_types]
 
