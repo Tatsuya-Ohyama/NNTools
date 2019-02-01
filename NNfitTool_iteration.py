@@ -17,7 +17,7 @@ from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_EVEN
 from basic_func import check_exist, check_overwrite
 from classes.Parameter import Parameter
 from classes.Sequence import Sequence
-from classes.DataGroup import DataGroup
+from classes.DataGroup import DataGroup2
 
 
 # =============== variable =============== #
@@ -36,196 +36,167 @@ if __name__ == '__main__':
 	check_exist(args.input_file, 2)
 
 	# initial parameter
-	parameters = [Parameter("dH"), Parameter("dS"), Parameter("dG"), Parameter("dH_opt"), Parameter("dS_opt"), Parameter("dG_opt")]
+	parameters = [Parameter("dH"), Parameter("dS"), Parameter("dG")]
 
 	# reading sequence and experimental data
-	sequences = []
-	point_datas = [DataGroup(), DataGroup(), DataGroup()]
+	exp_datas = [DataGroup2("dH"), DataGroup2("dS"), DataGroup2("dG")]
 	with open(args.input_file, "r") as obj_input:
 		reader = csv.reader(obj_input)
 
 		# Ignore line number 1 (header) in CSV
 		next(reader)
 
-		for line_eval in reader:
-			sequence = Sequence(line_eval[2], line_eval[0])
-			sequences.append(sequence)
-			point_datas[0].add_data("row", [sequence.get_name()], ["".join(sequence.get_sequence()), line_eval[1]])
-
-	point_datas[0].set_label("column", ["Sequence", "Exp."])
-	point_datas[0].set_dtype(np.float, "label", "Exp.")
-	point_datas[1] = copy.deepcopy(point_datas[0])
-	point_datas[2] = copy.deepcopy(point_datas[0])
+		for line_val in reader:
+			sequence = Sequence(line_val[0], line_val[1])
+			exp_datas[0].append(sequence, float(line_val[2]))
+			exp_datas[1].append(sequence, float(line_val[3]))
+			exp_datas[2].append(sequence, float(line_val[4]))
 
 
 	# optimize parameter
-	energy_idx = 2
-	if energy_idx == 2:
-	# for energy_idx in range(3):
+	for exp_idx in range(3):
 		# loop for energy type: dH, dS, and dG
-		point_data = point_datas[energy_idx]
+		print("=============== Fitting {0} ===============".format(parameters[exp_idx].get_name()))
+		point_data = exp_datas[exp_idx]
 
-		parameter_types = [parameter_type for parameter_type in parameters[energy_idx + 3].get_parameter().keys()]
-		candidate_parameters = [Parameter(parameter_type) for parameter_type in parameter_types]
-		flag_change = [True for x in parameter_types]
+		parameter_types = [parameter_type for parameter_type in parameters[exp_idx].get_parameter().keys()]
+		parameters_opt = [Parameter(parameter_type) for parameter_type in parameter_types]
 		increment = args.initial_increment
 		direction = [0 for x in parameter_types]
-		flag_first = True
 
-		e_eval = []
-		e_prev = []
+		evaluation_val = [0.0 for x in parameter_types]
+		evaluation_prev = [0.0 for x in parameter_types]
+		change_list = []
+		cnt_i = 0
 		while args.threshold_increment < increment:
 			# loop while increment is larger than threshold
-
-			# add initial parameter to point data
-
 			for parameter_idx, parameter_type in enumerate(parameter_types):
 				# loop for parameters
+				if direction[parameter_idx] == False:
+					# When not determine direction, determined direction
+					# create 0,+,- changed parameter object
+					parameter_plus = parameters_opt[parameter_idx].clone()
+					parameter_plus.set_name(parameter_type + "_plus")
+					parameter_plus.set_parameter(parameter_type, parameter_plus.get_parameter(parameter_type) + increment)
+					parameter_minus = parameters_opt[parameter_idx].clone()
+					parameter_minus.set_name(parameter_type + "_minus")
+					parameter_minus.set_parameter(parameter_type, parameter_minus.get_parameter(parameter_type) - increment)
 
-				if flag_first:
-					point_data.add_data("column", [parameter_type], [sequence.set_parameter(candidate_parameters[parameter_idx]).get_energy() for sequence in sequences], np.float)
-					e_eval = [0.0 for x in parameter_types]
+					# evaluation
+					evaluation_val_tmp = []
+					evaluation_val_tmp.append(exp_datas[exp_idx].get_stat(parameters_opt[parameter_idx], "diff_square"))
+					evaluation_val_tmp.append(exp_datas[exp_idx].get_stat(parameter_plus, "diff_square"))
+					evaluation_val_tmp.append(exp_datas[exp_idx].get_stat(parameter_minus, "diff_square"))
+					evaluation_prev[parameter_idx] = exp_datas[exp_idx].get_stat(parameters_opt[parameter_idx], "diff_square")
 
-				if flag_change[parameter_idx]:
-					# for parameter changed with current increment
+					# determine direction
+					min_val = min(evaluation_val_tmp)
+					min_val_idx = [i for i, x in enumerate(evaluation_val_tmp) if min_val == x]
+					if len(min_val_idx) != 1 or min_val_idx[0] == 0:
+						# When all evaluation_val_tmp is the same even if parameter is changed
+						# When evaluation_val_tmp value for base parameter is closest to 1, lock changing
+						evaluation_val[parameter_idx] = exp_datas[exp_idx].get_stat(parameters_opt[parameter_idx], "diff_square")
 
-					# change parameter
-					if direction[parameter_idx] == False:
-						# not determine direction
+					elif min_val_idx[0] == 1:
+						# When evaluation for plus parameter is adopted
+						direction[parameter_idx] = 1
 
-						# create +/- increment parameter object
-						parameter_plus = Parameter(parameter_type + "_plus")
-						parameter_plus.set_parameter("all", candidate_parameters[parameter_idx].get_parameter())
-						parameter_plus.set_parameter(parameter_type, parameter_plus.get_parameter(parameter_type) + increment)
-						parameter_minus = Parameter(parameter_type + "_minus")
-						parameter_minus.set_parameter("all", candidate_parameters[parameter_idx].get_parameter())
-						parameter_minus.set_parameter(parameter_type, parameter_minus.get_parameter(parameter_type) - increment)
-
-						# add energy
-						point_data.add_data("column", [parameter_type + "_plus"], [sequence.set_parameter(parameter_plus).get_energy() for sequence in sequences], np.float)
-						point_data.add_data("column", [parameter_type + "_minus"], [sequence.set_parameter(parameter_minus).get_energy() for sequence in sequences], np.float)
-
-						# calculate error
-						e = [point_data.get_diff("label", "Exp.", parameter_type)[1], point_data.get_diff("label", "Exp.", parameter_type + "_plus")[1], point_data.get_diff("label", "Exp.", parameter_type + "_minus")[1]]
-						print(100,e)
-						e_prev = e
-						min_e = min(e)
-						min_e_idx = [i for i, x in enumerate(e) if min_e == x]
-						if len(min_e_idx) != 1 or min_e_idx[0] == 0:
-							# When all e is the same even if parameter is changed
-							# When e value for base parameter is closest to 1, lock changing
-							flag_change[parameter_idx] = False
-							e_eval[parameter_idx] = e[0]
-							point_data.remove_data("column", "label", parameter_type + "_plus")
-							point_data.remove_data("column", "label", parameter_type + "_minus")
-
-						elif min_e_idx[0] == 1:
-							# When r value for high parameter is closest to 1, update base parameter to high parameter
-							parameter_plus.set_name(parameter_type)
-							candidate_parameters[parameter_idx] = parameter_plus
-							point_data.remove_data("column", "label", parameter_type + "_minus")
-							point_data.remove_data("column", "label", parameter_type)
-							point_data.rename_label("column", parameter_type + "_plus", parameter_type)
-							direction[parameter_idx] = 1
-							e_eval[parameter_idx] = e[1]
-							print("shift plus")
-
-						elif min_e_idx[0] == 2:
-							# When r value for low parameter is closest to 1, update base parameter to low parameter
-							parameter_minus.set_name(parameter_type)
-							candidate_parameters[parameter_idx] = parameter_minus
-							point_data.remove_data("column", "label", parameter_type + "_plus")
-							point_data.remove_data("column", "label", parameter_type)
-							point_data.rename_label("column", parameter_type + "_minus", parameter_type)
-							direction[parameter_idx] = -1
-							e_eval[parameter_idx] = e[2]
-							print("shift minus")
-
-						else:
-							sys.stderr.write("ERROR: undefined condition.\n")
-							sys.exit(1)
+					elif min_val_idx[0] == 2:
+						# When evaluation for minus parameter is adopted
+						direction[parameter_idx] = -1
 
 					else:
-						# determined direction
-						# change parameter
-						parameter_new = Parameter(parameter_type + "_new")
-						parameter_new.set_parameter("all", {k: v + direction[parameter_idx] * increment if k == candidate_parameters[parameter_idx].get_name() else v for k, v in candidate_parameters[parameter_idx].get_parameter().items()})
+						sys.stderr.write("ERROR: undefined condition.\n")
+						sys.exit(1)
 
-						# add energy
-						point_data.add_data("column", [parameter_type + "_new"], [sequence.set_parameter(parameter_new).get_energy() for sequence in sequences], np.float)
+				parameter_new = parameters_opt[parameter_idx].clone()
+				parameter_new.set_name(parameter_type + "_new")
+				parameter_new.set_parameter("all", parameters_opt[parameter_idx].get_parameter())
+				parameter_new.set_parameter(parameter_type, parameter_new.get_parameter(parameter_type) + direction[parameter_idx] * increment)
 
-						# calculate error
-						e = [point_data.get_diff("label", "Exp.", parameter_type)[1], point_data.get_diff("label", "Exp.", parameter_type + "_new")[1]]
-						print(101, e)
-						e_prev = e
-						min_e = min(e)
-						min_e_idx = [i for i, x in enumerate(e) if min_e == x]
-						if len(min_e_idx) != 1 or min_e_idx[0] == 0:
-							# When r value for base parameter is closest to 1, change increment
-							# When r value for prev parameter is closest to 1, lock changing
-							flag_change[parameter_idx] = False
-							point_data.remove_data("column", "label", parameter_type + "_new")
-							print("fail")
+				# evaluation
+				evaluation_val_tmp = []
+				evaluation_val_tmp.append(exp_datas[exp_idx].get_stat(parameters_opt[parameter_idx], "diff_square"))
+				evaluation_val_tmp.append(exp_datas[exp_idx].get_stat(parameter_new, "diff_square"))
 
-						elif min_e_idx[0] == 1:
-							# When r value for new parameter is closest to 1, update base parameter to low parameter
-							print("old", parameter.get_parameter())
-							parameter_new.set_name(parameter_type)
-							candidate_parameters[parameter_idx] = parameter_new
-							point_data.remove_data("column", "label", parameter_type)
-							point_data.rename_label("column", parameter_type + "_new", parameter_type)
-							e_eval[parameter_idx] = e[1]
-							print("new", parameter_new.get_parameter())
-							print("update")
+				# calculate evaluation_val_tmp
+				min_val = min(evaluation_val_tmp)
+				min_val_idx = [i for i, x in enumerate(evaluation_val_tmp) if min_val == x]
+				if len(min_val_idx) != 1 or min_val_idx[0] == 0:
+					# When all factors of evaluation_val_tmp take the same value, lock changing
+					# When evaluation_val_tmp for prev parameter is closest to 1, lock changing
+					evaluation_val[parameter_idx] = evaluation_prev[parameter_idx]
 
-						else:
-							sys.stderr.write("ERROR: undefined condition.\n")
-							sys.exit(1)
-				# print(point_data.get_data())
-				# print(e_prev, e)
-				# print(parameter_type)
-				sys.stdin.readline()
+				elif min_val_idx[0] == 1:
+					# When r value for new parameter is closest to 1, update base parameter to low parameter
+					parameter_new.set_name(parameter_type)
+					parameters_opt[parameter_idx] = parameter_new
+					evaluation_val[parameter_idx] = evaluation_val_tmp[1]
+
+				else:
+					sys.stderr.write("ERROR: undefined condition.\n")
+					sys.exit(1)
+			print("-" * 58)
 
 			# evaluation for error
-			print(e_prev, e)
-			min_e = max(e_eval)
-			min_e_idx = [i for i, v in enumerate(e_eval) if v == min_e][0]
+			cnt_i += 1
+			print("{0}     Iteration: {1} (dt = {2})".format(parameters[exp_idx].get_name(), cnt_i, increment))
+			evaluation_diff = [abs(x - y) for x, y in zip(evaluation_prev, evaluation_val)]
+			max_val = max(evaluation_diff)
 
-			# update_parameter
-			new_parameter_type = candidate_parameters[min_e_idx].get_name()
-			new_parameter_val = candidate_parameters[min_e_idx].get_parameter(new_parameter_type)
-			for parameter in candidate_parameters:
-				parameter.set_parameter(new_parameter_type, new_parameter_val)
-			parameters[energy_idx + 3] = candidate_parameters[min_e_idx]
-			flag_first = False
+			if max_val != 0.0:
+				max_val_idx = [i for i, v in enumerate(evaluation_diff) if v == max_val][0]
 
-			print(parameters[energy_idx + 3].get_parameter())
-			print("e", e_eval[min_e_idx])
-			for i, (p, r) in enumerate(zip(parameter_types, e_eval)):
-				if i == min_e_idx:
-					print(p, r, "O")
-				else:
-					print(p, r)
+				# update_parameter
+				new_parameter_type = parameters_opt[max_val_idx].get_name()
+				new_parameter_val = parameters_opt[max_val_idx].get_parameter(new_parameter_type)
+				for parameter in parameters_opt:
+					parameter.set_parameter(new_parameter_type, copy.deepcopy(new_parameter_val))
+				parameters[exp_idx] = parameters_opt[max_val_idx]
 
-			if flag_change.count(False) == len(parameter_types):
+				print("{0:^8} {1:^10} {2:^10} {3:^10} {4:^10} {5:^5}".format("Type", "Parameter", "e1", "e2", "e_diff", "Adopt"))
+				print("{0:-^8} {1:-^10} {2:-^10} {3:-^10} {4:-^10} {5:-^5}".format("", "", "", "", "", ""))
+				for i, (p, e1, e2, e_diff) in enumerate(zip(parameter_types, evaluation_prev, evaluation_val, evaluation_diff)):
+					if i == max_val_idx:
+						print("{0:<8} {1:>10.3f} {2:>10.3f} {3:>10.3f} {4:>10.3f} {5:^5}".format(p, parameters[exp_idx].get_parameter(p), e1, e2, e_diff, "O"))
+					else:
+						print("{0:<8} {1:>10.3f} {2:>10.3f} {3:>10.3f} {4:>10.3f}".format(p, parameters[exp_idx].get_parameter(p), e1, e2, e_diff))
+				print("")
+				evaluation_prev = [evaluation_val[max_val_idx] for parameter in parameter_types]
+
+			else:
 				# When all parameters were locked, unlock and change increment
 				increment /= 2
-				flag_change = [True for x in flag_change]
-				print("next_step", increment)
-				print("=" * 50)
-				sys.stdin.readline()
 
-	point_datas[2].save_csv("point.csv")
+	print("")
+	print("===== Last parameter =====")
+	print("{0:^8} {1:^10}".format("Type", "Parameter"))
+	print("{0:-^8} {1:-^10}".format("", ""))
+	for p in parameter_types:
+		print("{0:<8} {1:>10.3f}".format(p, parameters[exp_idx].get_parameter(p)))
 
+	print("")
+	print("===== Comparing experimental data =====")
+	print("{0:^20} {1:^8} {2:^8} {3:^8}".format("Sequence", "Exp.", "Predict", "Diff"))
+	print("{0:-^20} {1:-^8} {2:-^8} {3:-^8}".format("", "", "", ""))
+	for row, diff in zip(exp_datas[2].get_energy(True, [parameters[2]]), exp_datas[2].get_stat(parameters[2], "diff_abs")):
+		print("{0:<20} {1:>8.3f} {2:>8.3f} {3:>8.3f}".format(row[0], row[1], row[2], diff))
 
+	print("")
+	print("===== Curve fitting =====")
+	print("Slope    :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "slope"))
+	print("Intercept:", exp_datas[exp_idx].get_stat(parameters[exp_idx], "intercept"))
+	print("R   (1D) :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "r"))
+	print("R^2 (1D) :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "r2"))
+	print("E        :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "diff_square"))
 
-
+	# output
 	if args.flag_overwrite == False:
 		check_overwrite(args.output_file)
 
 	with open(args.output_file, "w") as obj_output:
 		writer = csv.writer(obj_output)
-		writer.writerow(["", "dH (ref.)", "dH (opt.)", "dS (ref.)", "dS (opt.)", "dG (ref.)", "dG (opt.)"])
+		writer.writerow(["", "dH", "dS", "dG"])
 		parameters = [x.get_parameter() for x in parameters]
 		for parameter_type in parameters[0].keys():
-			writer.writerow([parameter_type, Decimal(str(parameters[0][parameter_type])).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP), Decimal(str(parameters[3][parameter_type])).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP), Decimal(str(parameters[1][parameter_type])).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP), Decimal(str(parameters[4][parameter_type])).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP), Decimal(str(parameters[2][parameter_type])).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP), Decimal(str(parameters[5][parameter_type])).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP)])
+			writer.writerow([parameter_type, Decimal(str(parameters[0][parameter_type])).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP), Decimal(str(parameters[1][parameter_type])).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP), Decimal(str(parameters[1][parameter_type])).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP), Decimal(str(parameters[2][parameter_type])).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP)])
