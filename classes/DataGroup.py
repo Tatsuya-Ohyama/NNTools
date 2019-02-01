@@ -359,13 +359,14 @@ class DataGroup2:
 			energy = [[sequence.get_sequence("string") for sequence in self._sequences]]
 		energy += [self._energy]
 		energy += [[sequence.set_parameter(parameter).get_energy() for sequence in self._sequences] for parameter in obj_parameters]
+		energy = [[energy[row_idx][col_idx] for row_idx in range(len(energy))] for col_idx in range(len(energy[0]))]
 		return energy
 
 
 	def get_stat(self, obj_parameter, data_type = None, deg = 1):
 		"""
 		return statistics
-		@param data_type: None, "r", "r2", "slope", "intercept", "diff" (Default: None)
+		@param data_type: None, "r", "r2", "slope", "intercept", "diff_abs", "diff_mean", "diff_sum" (Default: None)
 		@param obj_parameter: degree of the fitting polynomial (Default: 1)
 		@param deg:
 		@return statistics value or return [r, r2, slope, intercept, diff_abs, diff_mean] list when data_type is None
@@ -377,6 +378,8 @@ class DataGroup2:
 		result.append(result[-1] ** 2)
 		result.append(np.abs(x - y))
 		result.append(np.mean(x - y))
+		result.append(np.sum(np.abs(x - y)))
+		result.append(np.sum((x - y) ** 2))
 
 		if data_type is None:
 			return result
@@ -392,6 +395,10 @@ class DataGroup2:
 			return result[4]
 		elif data_type == "diff_mean":
 			return result[5]
+		elif data_type == "diff_sum":
+			return result[6]
+		elif data_type == "diff_square":
+			return result[7]
 		else:
 			sys.stderr.write("ERROR: undefined data_type at get_stat() in DataGroup class.\n")
 			sys.exit(1)
