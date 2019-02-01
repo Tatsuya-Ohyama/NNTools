@@ -3,6 +3,7 @@
 
 import sys
 import pickle
+import copy
 
 # =============== variables =============== #
 parameter_list = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "5term_TA"]
@@ -115,6 +116,14 @@ class Parameter:
 			sys.stderr.write("ERROR: {0} does not found.\n".format(parameter_name))
 			sys.exit(1)
 		return self
+
+
+	def clone(self):
+		"""
+		return clone(self)
+		@return self
+		"""
+		return copy.deepcopy(self)
 
 
 	def get_name(self):
