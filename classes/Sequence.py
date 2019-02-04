@@ -32,7 +32,7 @@ class Sequence:
 		self._sequence = ""
 		self._parameter = None
 		self._nucleic_type = "DNA"
-		self._flag_self_complementary = False
+		self._is_self_complement = False
 
 		# initiation
 		self.set_name(name)
@@ -81,16 +81,8 @@ class Sequence:
 		if sequence is not None:
 			self._sequence = list(sequence)
 			self._nucleic_type = nucleic_type
-		return self
-
-
-	def set_self_complementary(self, flag_self_complementary = False):
-		"""
-		set flag_self_complementary
-		@param flag_self_complementary: True or False (Default: False)
-		@return self
-		"""
-		self._flag_self_complementary = flag_self_complementary
+			complement = [BASE_PAIR[base] for base in self._sequence]
+			self._is_self_complement = self._sequence == list(reversed(complement))
 		return self
 
 
@@ -126,6 +118,14 @@ class Sequence:
 		else:
 			sys.stderr.write("ERROR: undefined sequence_type at get_sequence() in Sequence class.\n")
 			sys.exit(1)
+
+
+	def is_complement(self):
+		"""
+		return self complement or not
+		@return True or False
+		"""
+		return self._is_self_complement
 
 
 	def get_freq(self):
@@ -195,7 +195,7 @@ class Sequence:
 			pair_type = "/".join([pair_forward, pair_reverse])
 			energy += self._parameter.get_parameter(pair_type)
 
-		if self._flag_self_complementary:
+		if self._is_self_complement:
 			energy += self._parameter.get_parameter("symmetry")
 
 		return energy
