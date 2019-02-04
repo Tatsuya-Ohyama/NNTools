@@ -13,6 +13,7 @@ import csv
 import numpy as np
 import copy
 from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_EVEN
+from joblib import Parallel, delayed
 
 from basic_func import check_exist, check_overwrite
 from classes.Parameter import Parameter
@@ -28,7 +29,8 @@ if __name__ == '__main__':
 	parser.add_argument("-O", dest = "flag_overwrite", action = "store_true", default = False, help = "overwrite forcibly")
 	parser.add_argument("-d", dest = "threshold_increment", metavar = "THRESHOLD", type = float, default = 0.00001, help = "difference threshold of increment for searching (Default: 0.00001)")
 	parser.add_argument("-ii", dest = "initial_increment", metavar = "INITIAL_INCREMENT", type = float, default = 0.01, help = "initial increment (Default: 1.0)")
-	parser.add_argument("--verbose", "-v", action = "count", default = 0, help = "verbose (-v: display results / -vv: display calculation results)")
+	parser.add_argument("--verbose", "-v", dest = "verbose", action = "count", default = 0, help = "verbose (-v: display results / -vv: display calculation results)")
+	parser.add_argument("-t", dest = "thread", action = "store_true", default = False, help = "parallel calculation (Default: False)")
 	args = parser.parse_args()
 
 	check_exist(args.input_file, 2)

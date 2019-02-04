@@ -15,8 +15,12 @@ class DataGroup:
 		@param name: this object name
 		"""
 		# member variables
+		self._name = ""
 		self._sequences = []
 		self._energy = []
+
+		# initiation
+		self.set_name(name)
 
 
 	def save_pickle(self, output_file):
@@ -40,6 +44,16 @@ class DataGroup:
 		return self
 
 
+	def set_name(self, name):
+		"""
+		set name
+		@param name: data name
+		@return self
+		"""
+		self._name = name
+		return self
+
+
 	def append(self, obj_sequence, exp_value):
 		"""
 		append sequence object and experimental data
@@ -50,6 +64,14 @@ class DataGroup:
 		self._sequences.append(obj_sequence)
 		self._energy.append(exp_value)
 		return self
+
+
+	def get_name(self):
+		"""
+		return data name
+		@return name
+		"""
+		return self._name
 
 
 	def get_sequence(self, data_type = None):
