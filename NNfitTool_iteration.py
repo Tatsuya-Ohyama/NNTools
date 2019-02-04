@@ -31,6 +31,7 @@ if __name__ == '__main__':
 	parser.add_argument("-O", dest = "flag_overwrite", action = "store_true", default = False, help = "overwrite forcibly")
 	parser.add_argument("-d", dest = "threshold_increment", metavar = "THRESHOLD", type = float, default = 0.00001, help = "difference threshold of increment for searching (Default: 0.00001)")
 	parser.add_argument("-ii", dest = "initial_increment", metavar = "INITIAL_INCREMENT", type = float, default = 1.0, help = "initial increment (Default: 1.0)")
+	parser.add_argument("--verbose", "-v", action = "count", default = 0, help = "verbose (-v: display results / -vv: display calculation results)")
 	args = parser.parse_args()
 
 	check_exist(args.input_file, 2)
@@ -57,7 +58,9 @@ if __name__ == '__main__':
 	# optimize parameter
 	for exp_idx in range(3):
 		# loop for energy type: dH, dS, and dG
-		print("=============== Fitting {0} ===============".format(exp_label[exp_idx]))
+		print("_/" * 20)
+		print("{0:^40}".format("Fitting {0}".format(exp_label[exp_idx])))
+		print("_/" * 20)
 		point_data = exp_datas[exp_idx]
 
 		parameter_types = [parameter_type for parameter_type in parameters[exp_idx].get_parameter().keys()]
@@ -138,8 +141,9 @@ if __name__ == '__main__':
 					sys.stderr.write("ERROR: undefined condition.\n")
 					sys.exit(1)
 
-			print("-" * 64)
-			print("{0}     Iteration: {1} (dt = {2})".format(exp_label[exp_idx], cnt_i, increment))
+			if 2 <= args.verbose:
+				print("-" * 64)
+				print("{0}     Iteration: {1} (dt = {2})".format(exp_label[exp_idx], cnt_i, increment))
 
 			# evaluation for error
 			evaluation_diff = [abs(x - y) for x, y in zip(evaluation_prev, evaluation_val)]
@@ -155,41 +159,44 @@ if __name__ == '__main__':
 					parameter.set_parameter(new_parameter_type, copy.deepcopy(new_parameter_val))
 				parameters[exp_idx] = parameters_opt[max_val_idx]
 
-				print("{0:^8} {1:^10} {2:^12} {3:^12} {4:^12} {5:^5}".format("Type", "Parameter", "e1", "e2", "e_diff", "Adopt"))
-				print("{0:-^8} {1:-^10} {2:-^12} {3:-^12} {4:-^12} {5:-^5}".format("", "", "", "", "", ""))
-				for i, (p, e1, e2, e_diff) in enumerate(zip(parameter_types, evaluation_prev, evaluation_val, evaluation_diff)):
-					if i == max_val_idx:
-						print("{0:<8} {1:>10.3f} {2:>12.3f} {3:>12.3f} {4:>12.3f} {5:^5}".format(p, parameters[exp_idx].get_parameter(p), e1, e2, e_diff, "O"))
-					else:
-						print("{0:<8} {1:>10.3f} {2:>12.3f} {3:>12.3f} {4:>12.3f}".format(p, parameters[exp_idx].get_parameter(p), e1, e2, e_diff))
-				print("")
+				if 2 <= args.verbose:
+					print("{0:^8} {1:^10} {2:^12} {3:^12} {4:^12} {5:^5}".format("Type", "Parameter", "e1", "e2", "e_diff", "Adopt"))
+					print("{0:-^8} {1:-^10} {2:-^12} {3:-^12} {4:-^12} {5:-^5}".format("", "", "", "", "", ""))
+					for i, (p, e1, e2, e_diff) in enumerate(zip(parameter_types, evaluation_prev, evaluation_val, evaluation_diff)):
+						if i == max_val_idx:
+							print("{0:<8} {1:>10.3f} {2:>12.3f} {3:>12.3f} {4:>12.3f} {5:^5}".format(p, parameters[exp_idx].get_parameter(p), e1, e2, e_diff, "O"))
+						else:
+							print("{0:<8} {1:>10.3f} {2:>12.3f} {3:>12.3f} {4:>12.3f}".format(p, parameters[exp_idx].get_parameter(p), e1, e2, e_diff))
+					print("")
 				evaluation_prev = [evaluation_val[max_val_idx] for parameter in parameter_types]
 
 			else:
 				# When all parameters were locked, unlock and change increment
 				increment /= 2
 
-		print("")
-		print("===== Last parameter =====")
-		print("{0:^8} {1:^10}".format("Type", "Parameter"))
-		print("{0:-^8} {1:-^10}".format("", ""))
-		for p in parameter_types:
-			print("{0:<8} {1:>10.3f}".format(p, parameters[exp_idx].get_parameter(p)))
+		if 1 <= args.verbose:
+			print("")
+			print("===== Last parameter =====")
+			print("{0:^8} {1:^10}".format("Type", "Parameter"))
+			print("{0:-^8} {1:-^10}".format("", ""))
+			for p in parameter_types:
+				print("{0:<8} {1:>10.3f}".format(p, parameters[exp_idx].get_parameter(p)))
 
-		print("")
-		print("===== Comparing experimental data =====")
-		print("{0:^20} {1:^8} {2:^8} {3:^8}".format("Sequence", "Exp.", "Predict", "Diff"))
-		print("{0:-^20} {1:-^8} {2:-^8} {3:-^8}".format("", "", "", ""))
-		for row, diff in zip(exp_datas[exp_idx].get_energy(True, [parameters[2]]), exp_datas[exp_idx].get_stat(parameters[2], "diff_abs")):
-			print("{0:<20} {1:>8.3f} {2:>8.3f} {3:>8.3f}".format(row[0], row[1], row[2], diff))
+			print("")
+			print("===== Comparing experimental data =====")
+			print("{0:^20} {1:^8} {2:^8} {3:^8}".format("Sequence", "Exp.", "Predict", "Diff"))
+			print("{0:-^20} {1:-^8} {2:-^8} {3:-^8}".format("", "", "", ""))
+			for row, diff in zip(exp_datas[exp_idx].get_energy(True, [parameters[2]]), exp_datas[exp_idx].get_stat(parameters[2], "diff_abs")):
+				print("{0:<20} {1:>8.3f} {2:>8.3f} {3:>8.3f}".format(row[0], row[1], row[2], diff))
 
-		print("")
-		print("===== Curve fitting =====")
-		print("Slope    :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "slope"))
-		print("Intercept:", exp_datas[exp_idx].get_stat(parameters[exp_idx], "intercept"))
-		print("R   (1D) :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "r"))
-		print("R^2 (1D) :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "r2"))
-		print("E        :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "diff_square"))
+			print("")
+			print("===== Curve fitting =====")
+			print("Slope    :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "slope"))
+			print("Intercept:", exp_datas[exp_idx].get_stat(parameters[exp_idx], "intercept"))
+			print("R   (1D) :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "r"))
+			print("R^2 (1D) :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "r2"))
+			print("E        :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "diff_square"))
+			print("\n")
 
 	# output
 	if args.flag_overwrite == False:
