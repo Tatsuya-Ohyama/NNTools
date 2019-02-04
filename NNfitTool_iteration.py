@@ -17,7 +17,7 @@ from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_EVEN
 from basic_func import check_exist, check_overwrite
 from classes.Parameter import Parameter
 from classes.Sequence import Sequence
-from classes.DataGroup import DataGroup2
+from classes.DataGroup import DataGroup
 
 
 # =============== variable =============== #
@@ -40,7 +40,7 @@ if __name__ == '__main__':
 	parameters = [Parameter(label) for label in exp_label]
 
 	# reading sequence and experimental data
-	exp_datas = [DataGroup2(label) for label in exp_label]
+	exp_datas = [DataGroup(label) for label in exp_label]
 	with open(args.input_file, "r") as obj_input:
 		reader = csv.reader(obj_input)
 
@@ -169,27 +169,27 @@ if __name__ == '__main__':
 				# When all parameters were locked, unlock and change increment
 				increment /= 2
 
-	print("")
-	print("===== Last parameter =====")
-	print("{0:^8} {1:^10}".format("Type", "Parameter"))
-	print("{0:-^8} {1:-^10}".format("", ""))
-	for p in parameter_types:
-		print("{0:<8} {1:>10.3f}".format(p, parameters[exp_idx].get_parameter(p)))
+		print("")
+		print("===== Last parameter =====")
+		print("{0:^8} {1:^10}".format("Type", "Parameter"))
+		print("{0:-^8} {1:-^10}".format("", ""))
+		for p in parameter_types:
+			print("{0:<8} {1:>10.3f}".format(p, parameters[exp_idx].get_parameter(p)))
 
-	print("")
-	print("===== Comparing experimental data =====")
-	print("{0:^20} {1:^8} {2:^8} {3:^8}".format("Sequence", "Exp.", "Predict", "Diff"))
-	print("{0:-^20} {1:-^8} {2:-^8} {3:-^8}".format("", "", "", ""))
-	for row, diff in zip(exp_datas[2].get_energy(True, [parameters[2]]), exp_datas[2].get_stat(parameters[2], "diff_abs")):
-		print("{0:<20} {1:>8.3f} {2:>8.3f} {3:>8.3f}".format(row[0], row[1], row[2], diff))
+		print("")
+		print("===== Comparing experimental data =====")
+		print("{0:^20} {1:^8} {2:^8} {3:^8}".format("Sequence", "Exp.", "Predict", "Diff"))
+		print("{0:-^20} {1:-^8} {2:-^8} {3:-^8}".format("", "", "", ""))
+		for row, diff in zip(exp_datas[exp_idx].get_energy(True, [parameters[2]]), exp_datas[exp_idx].get_stat(parameters[2], "diff_abs")):
+			print("{0:<20} {1:>8.3f} {2:>8.3f} {3:>8.3f}".format(row[0], row[1], row[2], diff))
 
-	print("")
-	print("===== Curve fitting =====")
-	print("Slope    :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "slope"))
-	print("Intercept:", exp_datas[exp_idx].get_stat(parameters[exp_idx], "intercept"))
-	print("R   (1D) :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "r"))
-	print("R^2 (1D) :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "r2"))
-	print("E        :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "diff_square"))
+		print("")
+		print("===== Curve fitting =====")
+		print("Slope    :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "slope"))
+		print("Intercept:", exp_datas[exp_idx].get_stat(parameters[exp_idx], "intercept"))
+		print("R   (1D) :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "r"))
+		print("R^2 (1D) :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "r2"))
+		print("E        :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "diff_square"))
 
 	# output
 	if args.flag_overwrite == False:
