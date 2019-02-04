@@ -20,9 +20,6 @@ from classes.Sequence import Sequence
 from classes.DataGroup import DataGroup
 
 
-# =============== variable =============== #
-
-
 # =============== main =============== #
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description = "NNfitTool.py", formatter_class=argparse.RawTextHelpFormatter)
@@ -30,7 +27,7 @@ if __name__ == '__main__':
 	parser.add_argument("-o", dest = "output_file", metavar = "OUTPUT.csv", required = True, help = "output file")
 	parser.add_argument("-O", dest = "flag_overwrite", action = "store_true", default = False, help = "overwrite forcibly")
 	parser.add_argument("-d", dest = "threshold_increment", metavar = "THRESHOLD", type = float, default = 0.00001, help = "difference threshold of increment for searching (Default: 0.00001)")
-	parser.add_argument("-ii", dest = "initial_increment", metavar = "INITIAL_INCREMENT", type = float, default = 1.0, help = "initial increment (Default: 1.0)")
+	parser.add_argument("-ii", dest = "initial_increment", metavar = "INITIAL_INCREMENT", type = float, default = 0.01, help = "initial increment (Default: 1.0)")
 	parser.add_argument("--verbose", "-v", action = "count", default = 0, help = "verbose (-v: display results / -vv: display calculation results)")
 	args = parser.parse_args()
 
@@ -58,11 +55,12 @@ if __name__ == '__main__':
 	# optimize parameter
 	for exp_idx in range(3):
 		# loop for energy type: dH, dS, and dG
-		print("_/" * 20)
-		print("{0:^40}".format("Fitting {0}".format(exp_label[exp_idx])))
-		print("_/" * 20)
-		point_data = exp_datas[exp_idx]
+		if 1 <= args.verbose:
+			print("_/" * 20)
+			print("{0:^40}".format("Fitting {0}".format(exp_label[exp_idx])))
+			print("_/" * 20)
 
+		point_data = exp_datas[exp_idx]
 		parameter_types = [parameter_type for parameter_type in parameters[exp_idx].get_parameter().keys()]
 		parameters_opt = [Parameter(parameter_type) for parameter_type in parameter_types]
 		increment = args.initial_increment
@@ -113,26 +111,29 @@ if __name__ == '__main__':
 						sys.stderr.write("ERROR: undefined condition.\n")
 						sys.exit(1)
 
+				# parepare increased parameter
 				parameter_new = parameters_opt[parameter_idx].clone()
 				parameter_new.set_name(parameter_type + "_new")
 				parameter_new.set_parameter("all", parameters_opt[parameter_idx].get_parameter())
 				parameter_new.set_parameter(parameter_type, parameter_new.get_parameter(parameter_type) + direction[parameter_idx] * increment)
 
-				# evaluation
+				# evaluation (diff_square)
 				evaluation_val_tmp = []
 				evaluation_val_tmp.append(exp_datas[exp_idx].get_stat(parameters_opt[parameter_idx], "diff_square"))
 				evaluation_val_tmp.append(exp_datas[exp_idx].get_stat(parameter_new, "diff_square"))
 
-				# calculate evaluation_val_tmp
+				# choose parameter from statistics values (minimum diff_square)
 				min_val = min(evaluation_val_tmp)
 				min_val_idx = [i for i, x in enumerate(evaluation_val_tmp) if min_val == x]
 				if len(min_val_idx) != 1 or min_val_idx[0] == 0:
-					# When all factors of evaluation_val_tmp take the same value, lock changing
-					# When evaluation_val_tmp for prev parameter is closest to 1, lock changing
+					# When statistic values for both parameter is the same or
+					# prev parameter is closest to 1, only update evaluation_prev
+					print(parameter_type, (evaluation_val[parameter_idx] - evaluation_prev[parameter_idx]) / increment)
+					sys.stdin.readline()
 					evaluation_val[parameter_idx] = evaluation_prev[parameter_idx]
 
 				elif min_val_idx[0] == 1:
-					# When r value for new parameter is closest to 1, update base parameter to low parameter
+					# When statistic value for new parameter is closest to 1, update parameter
 					parameter_new.set_name(parameter_type)
 					parameters_opt[parameter_idx] = parameter_new
 					evaluation_val[parameter_idx] = evaluation_val_tmp[1]
@@ -145,11 +146,13 @@ if __name__ == '__main__':
 				print("-" * 64)
 				print("{0}     Iteration: {1} (dt = {2})".format(exp_label[exp_idx], cnt_i, increment))
 
-			# evaluation for error
+			# calculate diff statistic values between prev and present
+			# and choose largest one (The value that is largely close to the experimental value)
 			evaluation_diff = [abs(x - y) for x, y in zip(evaluation_prev, evaluation_val)]
 			max_val = max(evaluation_diff)
 
 			if max_val != 0.0:
+				# max_val other than 0.0 (max_val = 0.0 means that diff value is converged)
 				max_val_idx = [i for i, v in enumerate(evaluation_diff) if v == max_val][0]
 
 				# update_parameter
@@ -160,19 +163,21 @@ if __name__ == '__main__':
 				parameters[exp_idx] = parameters_opt[max_val_idx]
 
 				if 2 <= args.verbose:
-					print("{0:^8} {1:^10} {2:^12} {3:^12} {4:^12} {5:^5}".format("Type", "Parameter", "e1", "e2", "e_diff", "Adopt"))
-					print("{0:-^8} {1:-^10} {2:-^12} {3:-^12} {4:-^12} {5:-^5}".format("", "", "", "", "", ""))
+					print("{0:^8} {1:^10} {2:^12} {3:^12} {4:^5}".format("Type", "Parameter", "e", "e_diff", "Adopt"))
+					print("{0:-^8} {1:-^10} {2:-^12} {3:-^12} {4:-^5}".format("", "", "", "", "", ""))
+					print("{0:<8} {1:>10} {2:>12.3f}".format("(Prev)", "", evaluation_prev[0]))
 					for i, (p, e1, e2, e_diff) in enumerate(zip(parameter_types, evaluation_prev, evaluation_val, evaluation_diff)):
 						if i == max_val_idx:
-							print("{0:<8} {1:>10.3f} {2:>12.3f} {3:>12.3f} {4:>12.3f} {5:^5}".format(p, parameters[exp_idx].get_parameter(p), e1, e2, e_diff, "O"))
+							print("{0:<8} {1:>10.3f} {2:>12.3f} {3:>12.3f} {4:^5}".format(p, parameters[exp_idx].get_parameter(p), e2, e_diff, "O"))
 						else:
-							print("{0:<8} {1:>10.3f} {2:>12.3f} {3:>12.3f} {4:>12.3f}".format(p, parameters[exp_idx].get_parameter(p), e1, e2, e_diff))
+							print("{0:<8} {1:>10.3f} {2:>12.3f} {3:>12.3f}".format(p, parameters[exp_idx].get_parameter(p), e2, e_diff))
 					print("")
 				evaluation_prev = [evaluation_val[max_val_idx] for parameter in parameter_types]
 
 			else:
 				# When all parameters were locked, unlock and change increment
 				increment /= 2
+				direction = [0 for x in parameter_types]
 
 		if 1 <= args.verbose:
 			print("")
