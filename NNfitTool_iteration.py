@@ -123,13 +123,15 @@ if __name__ == '__main__':
 				evaluation_val_tmp.append(exp_datas[exp_idx].get_stat(parameter_new, "diff_square"))
 
 				# choose parameter from statistics values (minimum diff_square)
+				# slope = (evaluation_val[parameter_idx] - evaluation_prev[parameter_idx]) / increment
+				# if slope
+
+
 				min_val = min(evaluation_val_tmp)
 				min_val_idx = [i for i, x in enumerate(evaluation_val_tmp) if min_val == x]
 				if len(min_val_idx) != 1 or min_val_idx[0] == 0:
 					# When statistic values for both parameter is the same or
 					# prev parameter is closest to 1, only update evaluation_prev
-					print(parameter_type, (evaluation_val[parameter_idx] - evaluation_prev[parameter_idx]) / increment)
-					sys.stdin.readline()
 					evaluation_val[parameter_idx] = evaluation_prev[parameter_idx]
 
 				elif min_val_idx[0] == 1:
