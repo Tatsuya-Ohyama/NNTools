@@ -200,6 +200,11 @@ if __name__ == '__main__':
 					parameters[0].set_parameter(line_val[0], float(line_val[1]))
 					parameters[1].set_parameter(line_val[0], float(line_val[2]))
 					parameters[2].set_parameter(line_val[0], float(line_val[3]))
+					if len(line_val) == 7:
+						line_val[4:7] = [True if x.capitalize() == "True" else False for x in line_val[4:7]]
+						parameters[0].set_change_stat(line_val[0], line_val[4])
+						parameters[1].set_change_stat(line_val[0], line_val[5])
+						parameters[2].set_change_stat(line_val[0], line_val[6])
 
 	# reading sequence and experimental data
 	check_exist(args.input_file, 2)
@@ -250,6 +255,7 @@ if __name__ == '__main__':
 		writer.writerow(["Initial iteration", args.initial_increment])
 		writer.writerow(["Increment threshold", args.threshold_increment])
 		writer.writerow([""])
+		writer.writerow([""])
 
 		writer.writerow(["<< Parameter >>"])
 		writer.writerow(["", "dH", "dS", "dG"])
@@ -260,6 +266,7 @@ if __name__ == '__main__':
 				Decimal(str(parameters[1].get_parameter()[parameter_type])).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP),
 				Decimal(str(parameters[2].get_parameter()[parameter_type])).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP)
 				])
+		writer.writerow([""])
 		writer.writerow(["(Stat: R)"] + [exp_datas[idx].get_stat(parameters[idx], "r") for idx in range(3)])
 		writer.writerow(["(Stat: R2)"] + [exp_datas[idx].get_stat(parameters[idx], "r2") for idx in range(3)])
 		writer.writerow(["(Stat: Slope)"] + [exp_datas[idx].get_stat(parameters[idx], "slope") for idx in range(3)])
@@ -267,6 +274,7 @@ if __name__ == '__main__':
 		writer.writerow(["(Stat: Diff Mean)"] + [exp_datas[idx].get_stat(parameters[idx], "diff_mean") for idx in range(3)])
 		writer.writerow(["(Stat: Diff Sum)"] + [exp_datas[idx].get_stat(parameters[idx], "diff_sum") for idx in range(3)])
 		writer.writerow(["(Stat: Diff Sq)"] + [exp_datas[idx].get_stat(parameters[idx], "diff_square") for idx in range(3)])
+		writer.writerow([""])
 		writer.writerow([""])
 
 		writer.writerow(["<< Sequence >>"])
