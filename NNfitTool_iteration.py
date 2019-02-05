@@ -21,8 +21,12 @@ from classes.Sequence import Sequence
 from classes.DataGroup import DataGroup
 
 
+# =============== variable =============== #
+parameter_types = parameter_list = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "5term_TA"]
+
+
 # =============== function =============== #
-def calculation_worker(parameter, exp_data, increment, threshold_increment, verbose, flag_thread):
+def calculation_worker(parameter, exp_data, mode, increment, threshold_increment, verbose, flag_thread):
 	# calculate parameter
 	# loop for energy type: dH, dS, and dG
 	if not flag_thread and 1 <= verbose:
@@ -30,7 +34,6 @@ def calculation_worker(parameter, exp_data, increment, threshold_increment, verb
 		print("{0:^40}".format("Fitting {0}".format(exp_data.get_name())))
 		print("_/" * 20)
 
-	parameter_types = [parameter_type for parameter_type in parameter.get_parameter().keys()]
 	parameters_opt = [copy.deepcopy(parameter).set_name(parameter_type) for parameter_type in parameter_types]
 	direction = [0] * len(parameter_types)
 
@@ -54,10 +57,10 @@ def calculation_worker(parameter, exp_data, increment, threshold_increment, verb
 
 				# evaluation
 				evaluation_val_tmp = []
-				evaluation_val_tmp.append(exp_data.get_stat(parameters_opt[parameter_idx], "diff_square"))
-				evaluation_val_tmp.append(exp_data.get_stat(parameter_plus, "diff_square"))
-				evaluation_val_tmp.append(exp_data.get_stat(parameter_minus, "diff_square"))
-				evaluation_prev[parameter_idx] = exp_data.get_stat(parameters_opt[parameter_idx], "diff_square")
+				evaluation_val_tmp.append(exp_data.get_stat(parameters_opt[parameter_idx], mode))
+				evaluation_val_tmp.append(exp_data.get_stat(parameter_plus, mode))
+				evaluation_val_tmp.append(exp_data.get_stat(parameter_minus, mode))
+				evaluation_prev[parameter_idx] = exp_data.get_stat(parameters_opt[parameter_idx], mode)
 
 				# determine direction
 				min_val = min(evaluation_val_tmp)
@@ -65,7 +68,7 @@ def calculation_worker(parameter, exp_data, increment, threshold_increment, verb
 				if len(min_val_idx) != 1 or min_val_idx[0] == 0:
 					# When all evaluation_val_tmp is the same even if parameter is changed
 					# When evaluation_val_tmp value for base parameter is closest to 1, lock changing
-					evaluation_val[parameter_idx] = exp_data.get_stat(parameters_opt[parameter_idx], "diff_square")
+					evaluation_val[parameter_idx] = exp_data.get_stat(parameters_opt[parameter_idx], mode)
 
 				elif min_val_idx[0] == 1:
 					# When evaluation for plus parameter is adopted
@@ -85,12 +88,12 @@ def calculation_worker(parameter, exp_data, increment, threshold_increment, verb
 			if parameter_new.is_change(parameter_type):
 				parameter_new.set_parameter(parameter_type, parameter_new.get_parameter(parameter_type) + direction[parameter_idx] * increment)
 
-			# evaluation (diff_square)
+			# evaluation by mode
 			evaluation_val_tmp = []
-			evaluation_val_tmp.append(exp_data.get_stat(parameters_opt[parameter_idx], "diff_square"))
-			evaluation_val_tmp.append(exp_data.get_stat(parameter_new, "diff_square"))
+			evaluation_val_tmp.append(exp_data.get_stat(parameters_opt[parameter_idx], mode))
+			evaluation_val_tmp.append(exp_data.get_stat(parameter_new, mode))
 
-			# choose parameter from statistics values (minimum diff_square)
+			# choose parameter from statistics values (minimum value)
 			min_val = min(evaluation_val_tmp)
 			min_val_idx = [i for i, x in enumerate(evaluation_val_tmp) if min_val == x]
 			if len(min_val_idx) != 1 or min_val_idx[0] == 0:
@@ -110,7 +113,7 @@ def calculation_worker(parameter, exp_data, increment, threshold_increment, verb
 
 		if not flag_thread and 2 <= verbose:
 			print("-" * 53)
-			print("{0} at {1} steps (dt = {2})".format(exp_label[exp_idx], cnt_i, increment))
+			print("{0} at {1} steps (dt = {2})  Mode: {3}".format(exp_label[exp_idx], cnt_i, increment, mode))
 
 		# calculate diff statistic values between prev and present
 		# and choose largest one (The value that is largely close to the experimental value)
@@ -231,18 +234,27 @@ if __name__ == '__main__':
 
 
 	# optimize parameter
+	mode = "diff_square"
 	if args.flag_thread:
 		parameters = Parallel(n_jobs = 3)([
 			delayed(calculation_worker)(
 				parameters[exp_idx],
 				exp_datas[exp_idx],
+				mode,
 				args.initial_increment,
 				args.threshold_increment,
 				args.verbose, args.flag_thread
 			) for exp_idx in range(3)])
 	else:
 		for exp_idx in range(3):
-			parameters[exp_idx] = calculation_worker(parameters[exp_idx], exp_datas[exp_idx], args.initial_increment, args.threshold_increment, args.verbose, args.flag_thread)
+			parameters[exp_idx] = calculation_worker(
+				parameters[exp_idx],
+				exp_datas[exp_idx],
+				mode,
+				args.initial_increment,
+				args.threshold_increment,
+				args.verbose, args.flag_thread
+			)
 
 	# output
 	if args.flag_overwrite == False:
@@ -258,13 +270,17 @@ if __name__ == '__main__':
 		writer.writerow([""])
 
 		writer.writerow(["<< Parameter >>"])
-		writer.writerow(["", "dH", "dS", "dG"])
-		for parameter_type in parameters[0].get_parameter().keys():
+		writer.writerow(["", "dH", "dS", "dG", "", "Change (dH)", "Change (dS)", "Change (dG)"])
+		for parameter_type in parameter_types:
 			writer.writerow([
 				parameter_type,
 				Decimal(str(parameters[0].get_parameter()[parameter_type])).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP),
 				Decimal(str(parameters[1].get_parameter()[parameter_type])).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP),
-				Decimal(str(parameters[2].get_parameter()[parameter_type])).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP)
+				Decimal(str(parameters[2].get_parameter()[parameter_type])).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP),
+				"",
+				parameters[0].is_change(parameter_type),
+				parameters[1].is_change(parameter_type),
+				parameters[2].is_change(parameter_type)
 				])
 		writer.writerow([""])
 		writer.writerow(["(Stat: R)"] + [exp_datas[idx].get_stat(parameters[idx], "r") for idx in range(3)])
@@ -286,8 +302,12 @@ if __name__ == '__main__':
 			"Exp. (dG)",
 			"Predict (dH)",
 			"Predict (dS)",
-			"Predict (dG)"
-			])
+			"Predict (dG)",
+			"Diff. (dH)",
+			"Diff. (dS)",
+			"Diff. (dG)",
+			""
+			] + parameter_types)
 		datas = []
 		datas.append(exp_datas[0].get_energy(flag_sequence = True))
 		datas.append(exp_datas[1].get_energy(flag_sequence = True))
@@ -305,4 +325,8 @@ if __name__ == '__main__':
 			dH = [x[2] for x in datas[3] if x[0] == seq][0]
 			dS = [x[2] for x in datas[4] if x[0] == seq][0]
 			dG = [x[2] for x in datas[5] if x[0] == seq][0]
-			writer.writerow([name, seq, exp_dH, exp_dS, exp_dG, dH, dS, dG])
+			diff_dH = dH - exp_dH
+			diff_dS = dS - exp_dS
+			diff_dG = dG - exp_dG
+			freq = [sequence.get_freq()[parameter_type] for parameter_type in parameter_types]
+			writer.writerow([name, seq, exp_dH, exp_dS, exp_dG, dH, dS, dG, diff_dH, diff_dS, diff_dG] + [""] + freq)
