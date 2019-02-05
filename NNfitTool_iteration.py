@@ -22,7 +22,7 @@ from classes.DataGroup import DataGroup
 
 
 # =============== function =============== #
-def calculation_worker(exp_data, increment, threshold_increment, verbose, flag_thread):
+def calculation_worker(parameter, exp_data, increment, threshold_increment, verbose, flag_thread):
 	# calculate parameter
 	# loop for energy type: dH, dS, and dG
 	if not flag_thread and 1 <= verbose:
@@ -30,13 +30,12 @@ def calculation_worker(exp_data, increment, threshold_increment, verbose, flag_t
 		print("{0:^40}".format("Fitting {0}".format(exp_data.get_name())))
 		print("_/" * 20)
 
-	parameter = Parameter(exp_data.get_name())
 	parameter_types = [parameter_type for parameter_type in parameter.get_parameter().keys()]
-	parameters_opt = [Parameter(parameter_type) for parameter_type in parameter_types]
-	direction = [0 for x in parameter_types]
+	parameters_opt = [copy.deepcopy(parameter).set_name(parameter_type) for parameter_type in parameter_types]
+	direction = [0] * len(parameter_types)
 
-	evaluation_val = [0.0 for x in parameter_types]
-	evaluation_prev = [0.0 for x in parameter_types]
+	evaluation_val = [0.0] * len(parameter_types)
+	evaluation_prev = [0.0] * len(parameter_types)
 	cnt_i = 0
 	while threshold_increment < increment:
 		# loop while increment is larger than threshold
@@ -83,8 +82,8 @@ def calculation_worker(exp_data, increment, threshold_increment, verbose, flag_t
 			# parepare increased parameter
 			parameter_new = parameters_opt[parameter_idx].clone()
 			parameter_new.set_name(parameter_type + "_new")
-			parameter_new.set_parameter("all", parameters_opt[parameter_idx].get_parameter())
-			parameter_new.set_parameter(parameter_type, parameter_new.get_parameter(parameter_type) + direction[parameter_idx] * increment)
+			if parameter_new.is_change(parameter_type):
+				parameter_new.set_parameter(parameter_type, parameter_new.get_parameter(parameter_type) + direction[parameter_idx] * increment)
 
 			# evaluation (diff_square)
 			evaluation_val_tmp = []
@@ -110,8 +109,8 @@ def calculation_worker(exp_data, increment, threshold_increment, verbose, flag_t
 				sys.exit(1)
 
 		if not flag_thread and 2 <= verbose:
-			print("-" * 64)
-			print("{0}     Iteration: {1} (dt = {2})".format(exp_label[exp_idx], cnt_i, increment))
+			print("-" * 53)
+			print("{0} at {1} steps (dt = {2})".format(exp_label[exp_idx], cnt_i, increment))
 
 		# calculate diff statistic values between prev and present
 		# and choose largest one (The value that is largely close to the experimental value)
@@ -128,16 +127,17 @@ def calculation_worker(exp_data, increment, threshold_increment, verbose, flag_t
 			for parameter in parameters_opt:
 				parameter.set_parameter(new_parameter_type, copy.deepcopy(new_parameter_val))
 			parameter = parameters_opt[max_val_idx]
+			parameter.set_name(exp_data.get_name())
 
 			if not flag_thread and 2 <= verbose:
-				print("{0:^8} {1:^10} {2:^12} {3:^12} {4:^5}".format("Type", "Parameter", "e", "e_diff", "Adopt"))
-				print("{0:-^8} {1:-^10} {2:-^12} {3:-^12} {4:-^5}".format("", "", "", "", "", ""))
-				print("{0:<8} {1:>10} {2:>12.3f}".format("(Prev)", "", evaluation_prev[0]))
+				print("{0:^8} {1:^10} {2:^13} {3:^13} {4:^5}".format("Type", "Parameter", "e=sum(x'-x)^2", "Diff e (Prev)", "Adopt"))
+				print("{0:-^8} {1:-^10} {2:-^13} {3:-^13} {4:-^5}".format("", "", "", "", "", ""))
+				print("{0:<8} {1:>10} {2:>13.3f}".format("(Prev)", "", evaluation_prev[0]))
 				for i, (p, e1, e2, e_diff) in enumerate(zip(parameter_types, evaluation_prev, evaluation_val, evaluation_diff)):
 					if i == max_val_idx:
-						print("{0:<8} {1:>10.3f} {2:>12.3f} {3:>12.3f} {4:^5}".format(p, parameters[exp_idx].get_parameter(p), e2, e_diff, "O"))
+						print("{0:<8} {1:>10.3f} {2:>13.3f} {3:>13.3f} {4:^5}".format(p, parameter.get_parameter(p), e2, e_diff, "O"))
 					else:
-						print("{0:<8} {1:>10.3f} {2:>12.3f} {3:>12.3f}".format(p, parameters[exp_idx].get_parameter(p), e2, e_diff))
+						print("{0:<8} {1:>10.3f} {2:>13.3f} {3:>13.3f}".format(p, parameter.get_parameter(p), e2, e_diff))
 				print("")
 			evaluation_prev = [evaluation_val[max_val_idx] for parameter in parameter_types]
 
@@ -152,22 +152,22 @@ def calculation_worker(exp_data, increment, threshold_increment, verbose, flag_t
 		print("{0:^8} {1:^10}".format("Type", "Parameter"))
 		print("{0:-^8} {1:-^10}".format("", ""))
 		for p in parameter_types:
-			print("{0:<8} {1:>10.3f}".format(p, parameters[exp_idx].get_parameter(p)))
+			print("{0:<8} {1:>10.3f}".format(p, parameter.get_parameter(p)))
 
 		print("")
 		print("===== Comparing experimental data =====")
 		print("{0:^20} {1:^8} {2:^8} {3:^8}".format("Sequence", "Exp.", "Predict", "Diff"))
 		print("{0:-^20} {1:-^8} {2:-^8} {3:-^8}".format("", "", "", ""))
-		for row, diff in zip(exp_datas[exp_idx].get_energy(True, [parameters[2]]), exp_datas[exp_idx].get_stat(parameters[2], "diff_abs")):
+		for row, diff in zip(exp_data.get_energy(True, [parameters[2]]), exp_data.get_stat(parameters[2], "diff_abs")):
 			print("{0:<20} {1:>8.3f} {2:>8.3f} {3:>8.3f}".format(row[0], row[1], row[2], diff))
 
 		print("")
 		print("===== Curve fitting =====")
-		print("Slope    :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "slope"))
-		print("Intercept:", exp_datas[exp_idx].get_stat(parameters[exp_idx], "intercept"))
-		print("R   (1D) :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "r"))
-		print("R^2 (1D) :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "r2"))
-		print("E        :", exp_datas[exp_idx].get_stat(parameters[exp_idx], "diff_square"))
+		print("Slope    :", exp_data.get_stat(parameter, "slope"))
+		print("Intercept:", exp_data.get_stat(parameter, "intercept"))
+		print("R   (1D) :", exp_data.get_stat(parameter, "r"))
+		print("R^2 (1D) :", exp_data.get_stat(parameter, "r2"))
+		print("E        :", exp_data.get_stat(parameter, "diff_square"))
 		print("\n")
 
 	return parameter
@@ -184,15 +184,25 @@ if __name__ == '__main__':
 	parser.add_argument("-ii", dest = "initial_increment", metavar = "INITIAL_INCREMENT", type = float, default = 0.01, help = "initial increment (Default: 1.0)")
 	parser.add_argument("--verbose", "-v", dest = "verbose", action = "count", default = 0, help = "verbose (-v: display results / -vv: display calculation results)")
 	parser.add_argument("-t", dest = "flag_thread", action = "store_true", default = False, help = "parallel calculation (Default: False)")
+	parser.add_argument("-r", dest = "ref_param", metavar = "REF_PARAM.csv", help = "referenced parameter values")
 	args = parser.parse_args()
-
-	check_exist(args.input_file, 2)
 
 	# initial parameter
 	exp_label = ["dH", "dS", "dG"]
 	parameters = [Parameter(label) for label in exp_label]
 
+	# loading reference parameter
+	if args.ref_param is not None and check_exist(args.ref_param, 2, False):
+		with open(args.ref_param, "r") as obj_input:
+			reader = csv.reader(obj_input)
+			for line_idx, line_val in enumerate(reader):
+				if line_idx != 0:
+					parameters[0].set_parameter(line_val[0], float(line_val[1]))
+					parameters[1].set_parameter(line_val[0], float(line_val[2]))
+					parameters[2].set_parameter(line_val[0], float(line_val[3]))
+
 	# reading sequence and experimental data
+	check_exist(args.input_file, 2)
 	exp_datas = [DataGroup(label) for label in exp_label]
 	with open(args.input_file, "r") as obj_input:
 		reader = csv.reader(obj_input)
@@ -201,17 +211,25 @@ if __name__ == '__main__':
 		next(reader)
 
 		for line_val in reader:
-			sequence = Sequence(line_val[0], line_val[1])
-			exp_datas[0].append(sequence, float(line_val[2]))
-			exp_datas[1].append(sequence, float(line_val[3]))
-			exp_datas[2].append(sequence, float(line_val[4]))
+			exp_datas[0].append(
+				Sequence(line_val[0], line_val[1]).set_energy_type(exp_label[0]),
+				float(line_val[2])
+			)
+			exp_datas[1].append(
+				Sequence(line_val[0], line_val[1]).set_energy_type(exp_label[1]),
+				float(line_val[3])
+			)
+			exp_datas[2].append(
+				Sequence(line_val[0], line_val[1]).set_energy_type(exp_label[2]),
+				float(line_val[4])
+			)
 
 
 	# optimize parameter
-	parameters_opt = []
 	if args.flag_thread:
-		parameters_opt = Parallel(n_jobs = 3)([
+		parameters = Parallel(n_jobs = 3)([
 			delayed(calculation_worker)(
+				parameters[exp_idx],
 				exp_datas[exp_idx],
 				args.initial_increment,
 				args.threshold_increment,
@@ -219,8 +237,7 @@ if __name__ == '__main__':
 			) for exp_idx in range(3)])
 	else:
 		for exp_idx in range(3):
-			parameters_opt.append(calculation_worker(exp_datas[exp_idx], args.initial_increment, args.threshold_increment, args.verbose, args.flag_thread))
-
+			parameters[exp_idx] = calculation_worker(parameters[exp_idx], exp_datas[exp_idx], args.initial_increment, args.threshold_increment, args.verbose, args.flag_thread)
 
 	# output
 	if args.flag_overwrite == False:
@@ -228,12 +245,56 @@ if __name__ == '__main__':
 
 	with open(args.output_file, "w") as obj_output:
 		writer = csv.writer(obj_output)
+		writer.writerow(["<< Input >>"])
+		writer.writerow(["Input", args.input_file])
+		writer.writerow(["Initial iteration", args.initial_increment])
+		writer.writerow(["Increment threshold", args.threshold_increment])
+		writer.writerow([""])
+
+		writer.writerow(["<< Parameter >>"])
 		writer.writerow(["", "dH", "dS", "dG"])
-		parameters = [x.get_parameter() for x in parameters_opt]
-		for parameter_type in parameters[0].keys():
-			writer.writerow(
-				[parameter_type,
-				Decimal(str(parameters[0][parameter_type])).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP),
-				Decimal(str(parameters[1][parameter_type])).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP),
-				Decimal(str(parameters[2][parameter_type])).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP)
+		for parameter_type in parameters[0].get_parameter().keys():
+			writer.writerow([
+				parameter_type,
+				Decimal(str(parameters[0].get_parameter()[parameter_type])).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP),
+				Decimal(str(parameters[1].get_parameter()[parameter_type])).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP),
+				Decimal(str(parameters[2].get_parameter()[parameter_type])).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP)
 				])
+		writer.writerow(["(Stat: R)"] + [exp_datas[idx].get_stat(parameters[idx], "r") for idx in range(3)])
+		writer.writerow(["(Stat: R2)"] + [exp_datas[idx].get_stat(parameters[idx], "r2") for idx in range(3)])
+		writer.writerow(["(Stat: Slope)"] + [exp_datas[idx].get_stat(parameters[idx], "slope") for idx in range(3)])
+		writer.writerow(["(Stat: Intercept)"] + [exp_datas[idx].get_stat(parameters[idx], "intercept") for idx in range(3)])
+		writer.writerow(["(Stat: Diff Mean)"] + [exp_datas[idx].get_stat(parameters[idx], "diff_mean") for idx in range(3)])
+		writer.writerow(["(Stat: Diff Sum)"] + [exp_datas[idx].get_stat(parameters[idx], "diff_sum") for idx in range(3)])
+		writer.writerow(["(Stat: Diff Sq)"] + [exp_datas[idx].get_stat(parameters[idx], "diff_square") for idx in range(3)])
+		writer.writerow([""])
+
+		writer.writerow(["<< Sequence >>"])
+		writer.writerow([
+			"Name",
+			"Sequence",
+			"Exp. (dH)",
+			"Exp. (dS)",
+			"Exp. (dG)",
+			"Predict (dH)",
+			"Predict (dS)",
+			"Predict (dG)"
+			])
+		datas = []
+		datas.append(exp_datas[0].get_energy(flag_sequence = True))
+		datas.append(exp_datas[1].get_energy(flag_sequence = True))
+		datas.append(exp_datas[2].get_energy(flag_sequence = True))
+		datas.append(exp_datas[0].get_energy(flag_sequence = True, obj_parameters = [parameters[0]]))
+		datas.append(exp_datas[1].get_energy(flag_sequence = True, obj_parameters = [parameters[1]]))
+		datas.append(exp_datas[2].get_energy(flag_sequence = True, obj_parameters = [parameters[2]]))
+
+		for sequence in exp_datas[0].get_sequence():
+			name = sequence.get_name()
+			seq = sequence.get_sequence("string")
+			exp_dH = [x[1] for x in datas[0] if x[0] == seq][0]
+			exp_dS = [x[1] for x in datas[1] if x[0] == seq][0]
+			exp_dG = [x[1] for x in datas[2] if x[0] == seq][0]
+			dH = [x[2] for x in datas[3] if x[0] == seq][0]
+			dS = [x[2] for x in datas[4] if x[0] == seq][0]
+			dG = [x[2] for x in datas[5] if x[0] == seq][0]
+			writer.writerow([name, seq, exp_dH, exp_dS, exp_dG, dH, dS, dG])
