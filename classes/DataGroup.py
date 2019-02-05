@@ -107,10 +107,10 @@ class DataGroup:
 	def get_stat(self, obj_parameter, data_type = None, deg = 1):
 		"""
 		return statistics
-		@param data_type: None, "r", "r2", "slope", "intercept", "diff_abs", "diff_mean", "diff_sum, diff_square" (Default: None)
+		@param data_type: None, "r", "r2", "slope", "intercept", "diff_abs", "diff_mean", "diff_std", "diff_sum, diff_square" (Default: None)
 		@param obj_parameter: degree of the fitting polynomial (Default: 1)
 		@param deg:
-		@return statistics value or return [r, r2, slope, intercept, diff_abs, diff_mean, diff_sum, diff_square] list when data_type is None
+		@return statistics value or return [r, r2, slope, intercept, diff_abs, diff_mean, diff_std, diff_sum, diff_square] list when data_type is None
 		"""
 		x = np.array(self._energy)
 		y = np.array([sequence.get_energy(obj_parameter) for sequence in self._sequences])
@@ -122,6 +122,7 @@ class DataGroup:
 		result.append(result[-1] ** 2)
 		result.append(np.abs(x - y))
 		result.append(np.mean(x - y))
+		result.append(np.std(x - y))
 		result.append(np.sum(np.abs(x - y)))
 		result.append(np.sum((x - y) ** 2))
 
@@ -139,10 +140,12 @@ class DataGroup:
 			return result[4]
 		elif data_type == "diff_mean":
 			return result[5]
-		elif data_type == "diff_sum":
+		elif data_type == "diff_std":
 			return result[6]
-		elif data_type == "diff_square":
+		elif data_type == "diff_sum":
 			return result[7]
+		elif data_type == "diff_square":
+			return result[8]
 		else:
 			sys.stderr.write("ERROR: undefined data_type at get_stat() in DataGroup class.\n")
 			sys.exit(1)
