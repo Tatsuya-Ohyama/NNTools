@@ -30,6 +30,7 @@ class DataGroup:
 		@return: 自身を返す (チェーンメソッドのため)"""
 		with open(output_file, "wb") as obj_output:
 			pickle.dump(self, obj_output)
+			sys.stderr.write("INFO: save pickle file to '{0}'\n".format(output_file))
 		return self
 
 
@@ -41,6 +42,7 @@ class DataGroup:
 		"""
 		with open(input_file, "rb") as obj_input:
 			self = pickle.load(obj_input)
+			sys.stderr.write("INFO: restore object from pickle file '{0}'\n".format(input_file))
 		return self
 
 
@@ -97,7 +99,7 @@ class DataGroup:
 		if flag_sequence:
 			energy = [[sequence.get_sequence("string") for sequence in self._sequences]]
 		energy += [self._energy]
-		energy += [[sequence.set_parameter(parameter).get_energy() for sequence in self._sequences] for parameter in obj_parameters]
+		energy += [[sequence.get_energy(parameter) for sequence in self._sequences] for parameter in obj_parameters]
 		energy = [[energy[row_idx][col_idx] for row_idx in range(len(energy))] for col_idx in range(len(energy[0]))]
 		return energy
 
@@ -111,9 +113,9 @@ class DataGroup:
 		@return statistics value or return [r, r2, slope, intercept, diff_abs, diff_mean, diff_sum, diff_square] list when data_type is None
 		"""
 		x = np.array(self._energy)
-		y = np.array([sequence.set_parameter(obj_parameter).get_energy() for sequence in self._sequences])
+		y = np.array([sequence.get_energy(obj_parameter) for sequence in self._sequences])
 		result = [float(x) for x in np.polyfit(x, y, deg).tolist()]
-		if (y == 0.0).shape[0] == len(self._sequences):
+		if y[y == 0.0].shape[0] == len(self._sequences):
 			result.append(0.0)
 		else:
 			result.append(np.corrcoef(x, y)[0, 1])
