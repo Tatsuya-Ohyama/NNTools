@@ -56,6 +56,7 @@ class Parameter:
 		@return: 自身を返す (チェーンメソッドのため)"""
 		with open(output_file, "wb") as obj_output:
 			pickle.dump(self, obj_output)
+			sys.stderr.write("INFO: save pickle file to '{0}'\n".format(output_file))
 		return self
 
 
@@ -67,6 +68,7 @@ class Parameter:
 		"""
 		with open(input_file, "rb") as obj_input:
 			self = pickle.load(obj_input)
+			sys.stderr.write("INFO: restore object from pickle file '{0}'\n".format(input_file))
 		return self
 
 
