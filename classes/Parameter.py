@@ -43,7 +43,7 @@ class Parameter:
 			"symmetry": 0.0,
 			"5term_TA": 0.0
 		}
-
+		self._change = {k: True for k in self._parameters.keys()}
 
 		# initiation
 		self.set_name(name)
@@ -104,6 +104,17 @@ class Parameter:
 		return self
 
 
+	def set_change_stat(self, parameter_type, state):
+		"""
+		change state for changing parameter
+		@param parameter_type: parameter type
+		@param state: True or False
+		@return self
+		"""
+		self._change[parameter_type] = state
+		return self
+
+
 	def remove_parameter(self, parameter_name):
 		"""
 		remove parameter
@@ -132,6 +143,21 @@ class Parameter:
 		@return name
 		"""
 		return self._name
+
+
+	def is_change(self, parameter_type = None):
+		"""
+		return change state
+		@param parameter_type: None or parameter type
+		@return change state list for None, or boolean type value for parameter type
+		"""
+		if parameter_type is None:
+			return self._change
+		elif parameter_type in self._change.keys():
+			return self._change[parameter_type]
+		else:
+			sys.stderr.write("ERROR: undefined parameter type.\n")
+			sys.exit(1)
 
 
 	def get_parameter(self, parameter_type = None):
