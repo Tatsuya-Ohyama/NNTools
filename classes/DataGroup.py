@@ -5,8 +5,6 @@ import sys
 import pickle
 import numpy as np
 import statistics
-import warnings
-warnings.filterwarnings("error")
 
 
 # =============== class =============== #
