@@ -115,10 +115,11 @@ class DataGroup:
 		x = np.array(self._energy)
 		y = np.array([sequence.get_energy(obj_parameter) for sequence in self._sequences])
 		result = [float(x) for x in np.polyfit(x, y, deg).tolist()]
-		if y[y == 0.0].shape[0] == len(self._sequences):
+		if y[y == 0.0].shape[0] == len(self._sequences) or np.std(x) == 0.0 or np.std(y) == 0.0:
 			result.append(0.0)
 		else:
 			result.append(np.corrcoef(x, y)[0, 1])
+
 		result.append(result[-1] ** 2)
 		result.append(np.abs(x - y))
 		result.append(np.mean(x - y))

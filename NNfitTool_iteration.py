@@ -85,8 +85,7 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 			# parepare increased parameter
 			parameter_new = parameters_opt[parameter_idx].clone()
 			parameter_new.set_name(parameter_type + "_new")
-			if parameter_new.is_change(parameter_type):
-				parameter_new.set_parameter(parameter_type, parameter_new.get_parameter(parameter_type) + direction[parameter_idx] * increment)
+			parameter_new.set_parameter(parameter_type, parameter_new.get_parameter(parameter_type) + direction[parameter_idx] * increment)
 
 			# evaluation by mode
 			evaluation_val_tmp = []
@@ -181,13 +180,15 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description = "NNfitTool.py", formatter_class=argparse.RawTextHelpFormatter)
 	parser.add_argument("-i", dest = "input_file", metavar = "INPUT.csv", required = True, help = "sequence and experimental value file")
+	parser.add_argument("-r", dest = "ref_param", metavar = "REF_PARAM.csv", help = "referenced parameter values")
 	parser.add_argument("-o", dest = "output_file", metavar = "OUTPUT.csv", required = True, help = "output file")
 	parser.add_argument("-O", dest = "flag_overwrite", action = "store_true", default = False, help = "overwrite forcibly")
 	parser.add_argument("-d", dest = "threshold_increment", metavar = "THRESHOLD", type = float, default = 0.00001, help = "difference threshold of increment for searching (Default: 0.00001)")
 	parser.add_argument("-ii", dest = "initial_increment", metavar = "INITIAL_INCREMENT", type = float, default = 0.01, help = "initial increment (Default: 1.0)")
-	parser.add_argument("--verbose", "-v", dest = "verbose", action = "count", default = 0, help = "verbose (-v: display results / -vv: display calculation results)")
+	parser.add_argument("-T", dest = "temperature", metavar = "TEMPERATURE", type = float, default = 310.0, help = "temperature for experimental data (Default: 310.0)")
 	parser.add_argument("-t", dest = "flag_thread", action = "store_true", default = False, help = "parallel calculation (Default: False)")
-	parser.add_argument("-r", dest = "ref_param", metavar = "REF_PARAM.csv", help = "referenced parameter values")
+	parser.add_argument("-m", dest = "mode", metavar = "EVALUATION_METHOD", default = "diff_square", choices = ["r", "r2", "diff_mean", "diff_std", "diff_sum", "diff_square"], help = "evaluation method (r, r2, diff_mean, diff_std, diff_sum, diff_square) (Default: diff_square)")
+	parser.add_argument("--verbose", "-v", dest = "verbose", action = "count", default = 0, help = "verbose (-v: display results / -vv: display calculation results)")
 	args = parser.parse_args()
 
 	# initial parameter
@@ -233,28 +234,32 @@ if __name__ == '__main__':
 			)
 
 
-	# optimize parameter
-	mode = "diff_square"
+	# optimize parameter for dH and dG
 	if args.flag_thread:
-		parameters = Parallel(n_jobs = 3)([
+		parameters = Parallel(n_jobs = 2)([
 			delayed(calculation_worker)(
 				parameters[exp_idx],
 				exp_datas[exp_idx],
-				mode,
+				args.mode,
 				args.initial_increment,
 				args.threshold_increment,
 				args.verbose, args.flag_thread
-			) for exp_idx in range(3)])
+			) for exp_idx in [0, 2]])
 	else:
-		for exp_idx in range(3):
+		for exp_idx in [0, 2]:
 			parameters[exp_idx] = calculation_worker(
 				parameters[exp_idx],
 				exp_datas[exp_idx],
-				mode,
+				args.mode,
 				args.initial_increment,
 				args.threshold_increment,
 				args.verbose, args.flag_thread
 			)
+
+	# calculate dS
+	for parameter_type in parameter_types:
+		dS = (parameters[0].get_parameter(parameter_type) - parameters[2].get_parameter(parameter_type)) / args.temperature * 1000
+		parameters[1].set_parameter(parameter_type, dS)
 
 	# output
 	if args.flag_overwrite == False:
