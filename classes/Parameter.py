@@ -89,16 +89,19 @@ class Parameter:
 		@param parameter_val: parameter value
 		@return self
 		"""
+		if parameter_type == "all":
+			# すべての場合、そのまま引き受ける
+			self._parameters = {x: float(y) if self._change[x] else self._parameters[x] for x, y in parameter_val.items()}
+			return self
+
+		if parameter_type not in parameter_list:
+			# パラメータが相補鎖の形式で含まれる場合
+			parameter_type = [k for k, v in complement_list.items()][0]
+
 		if parameter_type in parameter_list:
 			# パラメータ名が含まれる場合
-			self._parameters[parameter_type] = float(parameter_val)
-		elif parameter_type in complement_list.values():
-			# パラメータが相補鎖の形式で含まれる場合
-			parameter_key = [k for k, v in complement_list.items()][0]
-			self._parameters[parameter_key] = float(parameter_val)
-		elif parameter_type == "all":
-			# すべての場合、そのまま引き受ける
-			self._parameters = {x: float(y) for x, y in parameter_val.items()}
+			if self._change[parameter_type]:
+				self._parameters[parameter_type] = float(parameter_val)
 		else:
 			sys.stderr.write("ERROR: undefined parameter_type in set_parameter() of ParameterData class ({0}).\n".format(parameter_type))
 			sys.exit(1)
