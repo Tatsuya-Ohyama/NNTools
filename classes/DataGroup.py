@@ -18,6 +18,8 @@ class DataGroup:
 		self._name = ""
 		self._sequences = []
 		self._energy = []
+		self._error = []
+		self._error_sign = []
 
 		# initiation
 		self.set_name(name)
@@ -56,7 +58,7 @@ class DataGroup:
 		return self
 
 
-	def append(self, obj_sequence, exp_value):
+	def append(self, obj_sequence, exp_value, exp_value_e = 0.0):
 		"""
 		append sequence object and experimental data
 		@param obj_sequence: Sequence object
@@ -65,6 +67,18 @@ class DataGroup:
 		"""
 		self._sequences.append(obj_sequence)
 		self._energy.append(exp_value)
+		self._error.append(exp_value_e)
+		self._error_sign.append(0)
+		return self
+
+
+	def set_error_sign(self, sign_list):
+		"""
+		set error sign
+		@param sign_list: sign list
+		@return self
+		"""
+		self._error_sign = sign_list
 		return self
 
 
@@ -98,10 +112,18 @@ class DataGroup:
 		energy = []
 		if flag_sequence:
 			energy = [[sequence.get_sequence("string") for sequence in self._sequences]]
-		energy += [self._energy]
+		energy += [self._energy] + [self._error]
 		energy += [[sequence.get_energy(parameter) for sequence in self._sequences] for parameter in obj_parameters]
 		energy = [[energy[row_idx][col_idx] for row_idx in range(len(energy))] for col_idx in range(len(energy[0]))]
 		return energy
+
+
+	def get_error_sign(self):
+		"""
+		return error sign (0: no error / 1: + error / -1: - error)
+		@return sign_list
+		"""
+		return self._error_sign
 
 
 	def get_stat(self, obj_parameter, data_type = None, deg = 1):
@@ -112,7 +134,7 @@ class DataGroup:
 		@param deg:
 		@return statistics value or return [r, r2, slope, intercept, diff_abs, diff_mean, diff_std, diff_sum, diff_square] list when data_type is None
 		"""
-		x = np.array(self._energy)
+		x = np.array([self._energy[idx] + self._error[idx] * self._error_sign[idx] for idx in range(len(self._energy))])
 		y = np.array([sequence.get_energy(obj_parameter) for sequence in self._sequences])
 		result = [float(x) for x in np.polyfit(x, y, deg).tolist()]
 		if y[y == 0.0].shape[0] == len(self._sequences) or np.std(x) == 0.0 or np.std(y) == 0.0:
