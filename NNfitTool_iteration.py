@@ -222,15 +222,20 @@ if __name__ == '__main__':
 		for line_val in reader:
 			exp_datas[0].append(
 				Sequence(line_val[0], line_val[1]).set_energy_type(exp_label[0]),
-				float(line_val[2])
-			)
-			exp_datas[1].append(
-				Sequence(line_val[0], line_val[1]).set_energy_type(exp_label[1]),
+				float(line_val[2]),
 				float(line_val[3])
 			)
+			exp_datas[1].append(
+				Sequence(line_val[0], line_val[1]).set_energy_type(
+					exp_label[1]),
+					float(line_val[4]),
+					float(line_val[5])
+			)
 			exp_datas[2].append(
-				Sequence(line_val[0], line_val[1]).set_energy_type(exp_label[2]),
-				float(line_val[4])
+				Sequence(line_val[0], line_val[1]).set_energy_type(
+					exp_label[2]),
+					float(line_val[6]),
+					float(line_val[7])
 			)
 
 
