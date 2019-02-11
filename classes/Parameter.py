@@ -28,20 +28,20 @@ class Parameter:
 		# member variables
 		self._name = ""
 		self._parameters = {
-			"AA/TT": 0.0,
-			"AT/TA": 0.0,
-			"TA/AT": 0.0,
-			"CA/GT": 0.0,
-			"GT/CA": 0.0,
-			"CT/GA": 0.0,
-			"GA/CT": 0.0,
-			"CG/GC": 0.0,
-			"GC/CG": 0.0,
-			"GG/CC": 0.0,
-			"init_GC": 0.0,
-			"init_AT": 0.0,
-			"symmetry": 0.0,
-			"5term_TA": 0.0
+			"AA/TT":    [0.0, 0.0, 0.0],
+			"AT/TA":    [0.0, 0.0, 0.0],
+			"TA/AT":    [0.0, 0.0, 0.0],
+			"CA/GT":    [0.0, 0.0, 0.0],
+			"GT/CA":    [0.0, 0.0, 0.0],
+			"CT/GA":    [0.0, 0.0, 0.0],
+			"GA/CT":    [0.0, 0.0, 0.0],
+			"CG/GC":    [0.0, 0.0, 0.0],
+			"GC/CG":    [0.0, 0.0, 0.0],
+			"GG/CC":    [0.0, 0.0, 0.0],
+			"init_GC":  [0.0, 0.0, 0.0],
+			"init_AT":  [0.0, 0.0, 0.0],
+			"symmetry": [0.0, 0.0, 0.0],
+			"5term_TA": [0.0, 0.0, 0.0]
 		}
 		self._change = {k: True for k in self._parameters.keys()}
 
@@ -86,12 +86,12 @@ class Parameter:
 		"""
 		set parameter method
 		@param parameter_type: parameter name (all, "AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", or "5term_TA")
-		@param parameter_val: parameter value
+		@param parameter_val: parameter value ([parameter, +error, -error] or parameter)
 		@return self
 		"""
 		if parameter_type == "all":
 			# すべての場合、そのまま引き受ける
-			self._parameters = {x: float(y) if self._change[x] else self._parameters[x] for x, y in parameter_val.items()}
+			self._parameters = {x: [float(y[0]), float(y[1]), float(y[2])] if self._change[x] else self._parameters[x] for x, y in parameter_val.items()}
 			return self
 
 		if parameter_type not in parameter_list:
@@ -101,12 +101,47 @@ class Parameter:
 		if parameter_type in parameter_list:
 			# パラメータ名が含まれる場合
 			if self._change[parameter_type]:
-				self._parameters[parameter_type] = float(parameter_val)
+				if type(parameter_val) == list:
+					self._parameters[parameter_type] = [float(x) for x in parameter_val]
+				else:
+					self._parameters[parameter_type] = [float(parameter_val), 0.0, 0.0]
 		else:
 			sys.stderr.write("ERROR: undefined parameter_type in set_parameter() of ParameterData class ({0}).\n".format(parameter_type))
 			sys.exit(1)
 
 		return self
+
+	def set_parameter_error(self, parameter_type, parameter_value):
+		"""
+		set parameter error
+		@param parameter_type: parameter type or "all"
+		@param parameter_value: parameter value for one parameter type or parameter value list for "all"
+		@return self
+		"""
+		paramter_types = []
+		paramter_values ~ []
+		if parameter_type == "all":
+			parameter_types = parameter_list
+			parameter_values = parameter_value
+		else:
+			if parameter_type not in parameter_list:
+				sys.stderr("ERROR: undefined parameter_type at set_parameter_error() in Parameter class ({0}).\n".format(parameter_type))
+				sys.exit(1)
+			parameter_types = [parameter_type]
+			parameter_values = [parameter_value]
+
+	for idx in range(len(parameter_types)):
+			parameter_values[idx] -= self._paramters[paramter_types[idx]][0]
+			if paramter_values[idx] < 0:
+				# negative error
+				if parameter_values[idx] < self._parameters[parameter_types[idx]][1]:
+					# update negative error
+					self._paramters[parameter_types[idx]][1] = parameter_values[idx]
+			elif 0 < parameter_values[idx]:
+				# positive error
+				if self._parameters[parameter_types[idx]][2] < parameter_values[idx]:
+					self._pamrameters[parameter_types[idx]][2] = parameter_values[idx]
+	return self
 
 
 	def set_change_stat(self, parameter_type, state):
