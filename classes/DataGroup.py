@@ -68,17 +68,7 @@ class DataGroup:
 		self._sequences.append(obj_sequence)
 		self._energy.append(exp_value)
 		self._error.append(exp_value_e)
-		self._error_sign.append(0)
-		return self
-
-
-	def set_error_sign(self, sign_list):
-		"""
-		set error sign
-		@param sign_list: sign list
-		@return self
-		"""
-		self._error_sign = sign_list
+		self._error_sign 0
 		return self
 
 
@@ -118,15 +108,7 @@ class DataGroup:
 		return energy
 
 
-	def get_error_sign(self):
-		"""
-		return error sign (0: no error / 1: + error / -1: - error)
-		@return sign_list
-		"""
-		return self._error_sign
-
-
-	def get_stat(self, obj_parameter, data_type = None, deg = 1):
+	def get_stat(self, obj_parameter, data_type = None, deg = 1, error_sign = None):
 		"""
 		return statistics
 		@param data_type: None, "r", "r2", "slope", "intercept", "diff_abs", "diff_mean", "diff_std", "diff_sum, diff_square" (Default: None)
@@ -134,7 +116,9 @@ class DataGroup:
 		@param deg:
 		@return statistics value or return [r, r2, slope, intercept, diff_abs, diff_mean, diff_std, diff_sum, diff_square] list when data_type is None
 		"""
-		x = np.array([self._energy[idx] + self._error[idx] * self._error_sign[idx] for idx in range(len(self._energy))])
+		if type(error_sign) != list:
+			error_sign = self._error_sign
+		x = np.array([self._energy[idx] + self._error[idx] * error_sign[idx] for idx in range(len(self._energy))])
 		y = np.array([sequence.get_energy(obj_parameter) for sequence in self._sequences])
 		result = [float(x) for x in np.polyfit(x, y, deg).tolist()]
 		if y[y == 0.0].shape[0] == len(self._sequences) or np.std(x) == 0.0 or np.std(y) == 0.0:
