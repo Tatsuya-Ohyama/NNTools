@@ -24,7 +24,7 @@ complement_list = {
 # =============== class =============== #
 class Parameter:
 	""" Parameter class for one energy type """
-	def __init__(self, name):
+	def __init__(self):
 		# member variables
 		self._name = ""
 		self._parameters = {
@@ -44,9 +44,6 @@ class Parameter:
 			"5term_TA": [0.0, 0.0, 0.0]
 		}
 		self._change = {k: True for k in self._parameters.keys()}
-
-		# initiation
-		self.set_name(name)
 
 
 	def save_pickle(self, output_file):
@@ -118,8 +115,8 @@ class Parameter:
 		@param parameter_value: parameter value for one parameter type or parameter value list for "all"
 		@return self
 		"""
-		paramter_types = []
-		paramter_values ~ []
+		parameter_types = []
+		parameter_values = []
 		if parameter_type == "all":
 			parameter_types = parameter_list
 			parameter_values = parameter_value
@@ -130,18 +127,18 @@ class Parameter:
 			parameter_types = [parameter_type]
 			parameter_values = [parameter_value]
 
-	for idx in range(len(parameter_types)):
-			parameter_values[idx] -= self._paramters[paramter_types[idx]][0]
-			if paramter_values[idx] < 0:
+		for idx in range(len(parameter_types)):
+			parameter_values[parameter_types[idx]][0] -= self._parameters[parameter_types[idx]][0]
+			if parameter_values[parameter_types[idx]][0] < 0:
 				# negative error
-				if parameter_values[idx] < self._parameters[parameter_types[idx]][1]:
+				if parameter_values[parameter_types[idx]][0] < self._parameters[parameter_types[idx]][1]:
 					# update negative error
-					self._paramters[parameter_types[idx]][1] = parameter_values[idx]
-			elif 0 < parameter_values[idx]:
+					self._parameters[parameter_types[idx]][1] = parameter_values[parameter_types[idx]][0]
+			elif 0 < parameter_values[parameter_types[idx]][0]:
 				# positive error
-				if self._parameters[parameter_types[idx]][2] < parameter_values[idx]:
-					self._pamrameters[parameter_types[idx]][2] = parameter_values[idx]
-	return self
+				if self._parameters[parameter_types[idx]][2] < parameter_values[parameter_types[idx]][0]:
+					self._parameters[parameter_types[idx]][2] = parameter_values[parameter_types[idx]][0]
+		return self
 
 
 	def set_change_stat(self, parameter_type, state):
