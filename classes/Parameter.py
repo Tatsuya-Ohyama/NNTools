@@ -28,20 +28,20 @@ class Parameter:
 		# member variables
 		self._name = ""
 		self._parameters = {
-			"AA/TT":    [0.0, 0.0],
-			"AT/TA":    [0.0, 0.0],
-			"TA/AT":    [0.0, 0.0],
-			"CA/GT":    [0.0, 0.0],
-			"GT/CA":    [0.0, 0.0],
-			"CT/GA":    [0.0, 0.0],
-			"GA/CT":    [0.0, 0.0],
-			"CG/GC":    [0.0, 0.0],
-			"GC/CG":    [0.0, 0.0],
-			"GG/CC":    [0.0, 0.0],
-			"init_GC":  [0.0, 0.0],
-			"init_AT":  [0.0, 0.0],
-			"symmetry": [0.0, 0.0],
-			"5term_TA": [0.0, 0.0]
+			"AA/TT":    [0.0, 0.0, 0.0],
+			"AT/TA":    [0.0, 0.0, 0.0],
+			"TA/AT":    [0.0, 0.0, 0.0],
+			"CA/GT":    [0.0, 0.0, 0.0],
+			"GT/CA":    [0.0, 0.0, 0.0],
+			"CT/GA":    [0.0, 0.0, 0.0],
+			"GA/CT":    [0.0, 0.0, 0.0],
+			"CG/GC":    [0.0, 0.0, 0.0],
+			"GC/CG":    [0.0, 0.0, 0.0],
+			"GG/CC":    [0.0, 0.0, 0.0],
+			"init_GC":  [0.0, 0.0, 0.0],
+			"init_AT":  [0.0, 0.0, 0.0],
+			"symmetry": [0.0, 0.0, 0.0],
+			"5term_TA": [0.0, 0.0, 0.0]
 		}
 		self._change = {k: True for k in self._parameters.keys()}
 
@@ -88,7 +88,7 @@ class Parameter:
 		"""
 		if parameter_type == "all":
 			# すべての場合、そのまま引き受ける
-			self._parameters = {x: [float(y[idx]) for idx in range(2)] if self._change[x] else self._parameters[x] for x, y in parameter_val.items()}
+			self._parameters = {x: [float(y[idx]) for idx in range(3)] if self._change[x] else self._parameters[x] for x, y in parameter_val.items()}
 			return self
 
 		if parameter_type not in parameter_list:
@@ -128,21 +128,32 @@ class Parameter:
 			parameter_values = [parameter_value]
 
 		for idx in range(len(parameter_types)):
-			parameter_values[parameter_types[idx]][0] -= self._parameters[parameter_types[idx]][0]
-			if self._parameters[parameter_types[idx]][1] < abs(parameter_values[parameter_types[idx]][0]):
-				# update negative error
-				self._parameters[parameter_types[idx]][1] = parameter_values[parameter_types[idx]][0]
+			if self._change[parameter_types[idx]]:
+				parameter_values[parameter_types[idx]][0] -= self._parameters[parameter_types[idx]][0]
+				if parameter_values[parameter_types[idx]][0] < 0:
+					# negative error
+					if parameter_values[parameter_types[idx]][0] < self._parameters[parameter_types[idx]][1]:
+						# update error
+						self._parameters[parameter_types[idx]][1] = parameter_values[parameter_types[idx]][0]
+				elif 0 < parameter_values[parameter_types[idx]][0]:
+					# positive error
+					if self._parameters[parameter_types[idx]][2] < parameter_values[parameter_types[idx]][0]:
+						# update error
+						self._parameters[parameter_types[idx]][2] = parameter_values[parameter_types[idx]][0]
 		return self
 
 
 	def set_change_stat(self, parameter_type, state):
 		"""
 		change state for changing parameter
-		@param parameter_type: parameter type
+		@param parameter_type: parameter type or "all"
 		@param state: True or False
 		@return self
 		"""
-		self._change[parameter_type] = state
+		if parameter_type == "all":
+			self._change = {k: state for k in self._change.keys()}
+		else:
+			self._change[parameter_type] = state
 		return self
 
 
@@ -191,21 +202,32 @@ class Parameter:
 			sys.exit(1)
 
 
-	def get_parameter(self, parameter_type = None):
+	def get_parameter(self, parameter_type = None, data_type = "raw"):
 		"""
 		return parameter
 		@param parameter_type: parameter type
+		@param data_type: raw ([value, error-, error+]) or correction (value, error+/-)
 		@return parameter (list for None(all) or float value for each parameter)
 		"""
+		values = {}
+		if data_type == "raw":
+			values = self._parameters
+		elif data_type == "correction":
+			error = {k: (abs(v[1]) + abs(v[2])) / 2 for k, v in self._parameters.items()}
+			values = {k: [v[0] - abs(v[1]) + error[k], error[k]] for k, v in self._parameters.items()}
+		else:
+			sys.stderr.write("ERROR: undefined data_type at get_parameter() in Parameter class.\n")
+			sys.exit(1)
+
 		if parameter_type in parameter_list:
 			# パラメータタイプが存在する場合
-			return self._parameters[parameter_type]
+			return values[parameter_type]
 		elif parameter_type in complement_list.values():
 			parameter_key = [k for k, v in complement_list.items()][0]
-			return self._parameters[parameter_key]
+			return values[parameter_key]
 		else:
 			# すべてのパラメータが指定された場合
-			return self._parameters
+			return values
 
 
 
