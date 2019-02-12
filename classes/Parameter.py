@@ -28,20 +28,20 @@ class Parameter:
 		# member variables
 		self._name = ""
 		self._parameters = {
-			"AA/TT":    [0.0, 0.0, 0.0],
-			"AT/TA":    [0.0, 0.0, 0.0],
-			"TA/AT":    [0.0, 0.0, 0.0],
-			"CA/GT":    [0.0, 0.0, 0.0],
-			"GT/CA":    [0.0, 0.0, 0.0],
-			"CT/GA":    [0.0, 0.0, 0.0],
-			"GA/CT":    [0.0, 0.0, 0.0],
-			"CG/GC":    [0.0, 0.0, 0.0],
-			"GC/CG":    [0.0, 0.0, 0.0],
-			"GG/CC":    [0.0, 0.0, 0.0],
-			"init_GC":  [0.0, 0.0, 0.0],
-			"init_AT":  [0.0, 0.0, 0.0],
-			"symmetry": [0.0, 0.0, 0.0],
-			"5term_TA": [0.0, 0.0, 0.0]
+			"AA/TT":    [0.0, 0.0],
+			"AT/TA":    [0.0, 0.0],
+			"TA/AT":    [0.0, 0.0],
+			"CA/GT":    [0.0, 0.0],
+			"GT/CA":    [0.0, 0.0],
+			"CT/GA":    [0.0, 0.0],
+			"GA/CT":    [0.0, 0.0],
+			"CG/GC":    [0.0, 0.0],
+			"GC/CG":    [0.0, 0.0],
+			"GG/CC":    [0.0, 0.0],
+			"init_GC":  [0.0, 0.0],
+			"init_AT":  [0.0, 0.0],
+			"symmetry": [0.0, 0.0],
+			"5term_TA": [0.0, 0.0]
 		}
 		self._change = {k: True for k in self._parameters.keys()}
 
@@ -129,15 +129,9 @@ class Parameter:
 
 		for idx in range(len(parameter_types)):
 			parameter_values[parameter_types[idx]][0] -= self._parameters[parameter_types[idx]][0]
-			if parameter_values[parameter_types[idx]][0] < 0:
-				# negative error
-				if parameter_values[parameter_types[idx]][0] < self._parameters[parameter_types[idx]][1]:
-					# update negative error
-					self._parameters[parameter_types[idx]][1] = parameter_values[parameter_types[idx]][0]
-			elif 0 < parameter_values[parameter_types[idx]][0]:
-				# positive error
-				if self._parameters[parameter_types[idx]][2] < parameter_values[parameter_types[idx]][0]:
-					self._parameters[parameter_types[idx]][2] = parameter_values[parameter_types[idx]][0]
+			if self._parameters[parameter_types[idx]][1] < abs(parameter_values[parameter_types[idx]][0]):
+				# update negative error
+				self._parameters[parameter_types[idx]][1] = parameter_values[parameter_types[idx]][0]
 		return self
 
 
