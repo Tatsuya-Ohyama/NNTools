@@ -88,7 +88,7 @@ class Parameter:
 		"""
 		if parameter_type == "all":
 			# すべての場合、そのまま引き受ける
-			self._parameters = {x: [float(y[0]), float(y[1]), float(y[2])] if self._change[x] else self._parameters[x] for x, y in parameter_val.items()}
+			self._parameters = {x: [float(y[idx]) for idx in range(2)] if self._change[x] else self._parameters[x] for x, y in parameter_val.items()}
 			return self
 
 		if parameter_type not in parameter_list:
