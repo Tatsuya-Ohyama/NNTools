@@ -15,6 +15,7 @@ import copy
 import itertools
 from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_EVEN
 from joblib import Parallel, delayed
+from pprint import pprint
 
 from basic_func import check_exist, check_overwrite
 from classes.Parameter import Parameter
@@ -194,18 +195,35 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 # =============== main =============== #
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description = "NNfitTool.py", formatter_class=argparse.RawTextHelpFormatter)
-	parser.add_argument("-i", dest = "input_file", metavar = "INPUT.csv", required = True, help = "sequence and experimental value file")
-	parser.add_argument("-r", dest = "ref_param", metavar = "REF_PARAM.csv", help = "referenced parameter values")
-	parser.add_argument("-o", dest = "output_file", metavar = "OUTPUT.csv", required = True, help = "output file")
-	parser.add_argument("-O", dest = "flag_overwrite", action = "store_true", default = False, help = "overwrite forcibly")
-	parser.add_argument("-d", dest = "threshold_increment", metavar = "THRESHOLD", type = float, default = 0.00001, help = "difference threshold of increment for searching (Default: 0.00001)")
-	parser.add_argument("-ii", dest = "initial_increment", metavar = "INITIAL_INCREMENT", type = float, default = 0.01, help = "initial increment (Default: 1.0)")
-	parser.add_argument("-T", dest = "temperature", metavar = "TEMPERATURE", type = float, default = 310.0, help = "temperature for experimental data (Default: 310.0)")
-	parser.add_argument("-t", dest = "thread", metavar = "THREAD", type = int, help = "number of threads for parallel calculation (Default: None)")
-	parser.add_argument("-m", dest = "mode", metavar = "EVALUATION_METHOD", default = "diff_square", choices = ["r", "r2", "diff_mean", "diff_std", "diff_sum", "diff_square"], help = "evaluation method (r, r2, diff_mean, diff_std, diff_sum, diff_square) (Default: diff_square)")
-	parser.add_argument("-e", dest = "flag_error", action = "store_true", default = False, help = "consider with experimental value with error")
-	parser.add_argument("--verbose", "-v", dest = "verbose", action = "count", default = 0, help = "verbose (-v: display results / -vv: display calculation results)")
+	input_group = parser.add_argument_group("Input")
+	input_group.add_argument("-x", dest = "experiment_file", metavar = "EXP.csv", required = True, help = "sequence and experimental value file")
+	input_group.add_argument("-r", dest = "ref_param", metavar = "REF_PARAM.csv", help = "referenced parameter values")
+
+	output_group = parser.add_argument_group("Output")
+	output_group.add_argument("-o", dest = "output_file", metavar = "OUTPUT.csv", required = True, help = "output file")
+	output_group.add_argument("-O", dest = "flag_overwrite", action = "store_true", default = False, help = "overwrite forcibly")
+
+	config_group = parser.add_argument_group("Config")
+	config_group.add_argument("-d", dest = "threshold_increment", metavar = "THRESHOLD", type = float, default = 0.00001, help = "difference threshold of increment for searching (Default: 0.00001)")
+	config_group.add_argument("-i", dest = "initial_increment", metavar = "INITIAL_INCREMENT", type = float, default = 0.01, help = "initial increment (Default: 1.0)")
+	config_group.add_argument("-T", dest = "temperature", metavar = "TEMPERATURE", type = float, default = 310.15, help = "temperature for experimental data (Default: 310.15)")
+	config_group.add_argument("-m", dest = "mode", metavar = "EVALUATION_METHOD", default = "diff_square", choices = ["r", "r2", "diff_mean", "diff_std", "diff_sum", "diff_square"], help = "evaluation method (r, r2, diff_mean, diff_std, diff_sum, diff_square) (Default: diff_square)")
+	config_group.add_argument("-S", dest = "flag_separate", action = "store_true", default = False, help = "Separately calculate dS (Default: OFF (dS is calculated by Gibbs free energy equation))")
+	error_group = config_group.add_mutually_exclusive_group()
+	error_group.add_argument("-e", dest = "flag_error", action = "store_true", default = False, help = "consider with experimental value with error")
+	error_group.add_argument("-es", dest = "flag_error_strict", action = "store_true", default = False, help = "strictly consider with experimental value with error")
+
+	misc_group = parser.add_argument_group("Misc")
+	misc_group.add_argument("-t", dest = "thread", metavar = "THREAD", type = int, help = "number of threads for parallel calculation (Default: None)")
+	misc_group.add_argument("--verbose", "-v", dest = "verbose", action = "count", default = 0, help = "verbose (-v: display results / -vv: display calculation results)")
 	args = parser.parse_args()
+
+
+	# calculate target
+	target_list = [0, 2]	# without dS
+	if args.flag_separate:
+		# with dS
+		target_list = [0, 1, 2]
 
 	# initial parameter
 	exp_label = ["dH", "dS", "dG"]
@@ -261,9 +279,9 @@ if __name__ == '__main__':
 	parameters_init = [copy.deepcopy(parameter) for parameter in parameters]
 
 	# reading sequence and experimental data
-	check_exist(args.input_file, 2)
+	check_exist(args.experiment_file, 2)
 	exp_datas = [DataGroup(label) for label in exp_label]
-	with open(args.input_file, "r") as obj_input:
+	with open(args.experiment_file, "r") as obj_input:
 		reader = csv.reader(obj_input)
 
 		# Ignore line number 1 (header) in CSV
@@ -289,9 +307,10 @@ if __name__ == '__main__':
 			)
 	sys.stderr.write("Loading experimental values ... done.\n")
 
-	# optimize parameter for dH and dG
+	# optimize parameter
 	sys.stderr.write("Optimize parameters.\n")
 	if args.thread is not None:
+		# multi-thread
 		parameters_tmp = Parallel(n_jobs = 2)([
 			delayed(calculation_worker)(
 				parameters[exp_idx],
@@ -300,12 +319,13 @@ if __name__ == '__main__':
 				args.initial_increment,
 				args.threshold_increment,
 				0
-			) for exp_idx in [0, 2]])
+			) for exp_idx in target_list])
 		parameters[0] = parameters_tmp[0]
 		parameters[2] = parameters_tmp[1]
 
 	else:
-		for exp_idx in [0, 2]:
+		# single-thread
+		for exp_idx in target_list:
 			parameters[exp_idx] = calculation_worker(
 				parameters[exp_idx],
 				exp_datas[exp_idx],
@@ -318,10 +338,49 @@ if __name__ == '__main__':
 
 	# optimize for parameter by experimental values with error
 	if args.flag_error:
-		max_iter = len(list(itertools.product([-1, 1], repeat = len(exp_datas[0].get_sequence()))))
 		sys.stderr.write("Optimize parameters with errors.\n")
+		negative = [1 for x in range(len(exp_datas[0].get_sequence()))]
+		positive = [-1 for x in range(len(exp_datas[0].get_sequence()))]
+		new_parameters = []
 		if args.thread is not None:
-			for exp_idx in [0, 2]:
+			# multi-thread
+			new_parameters = Parallel(n_jobs = args.thread)([
+				delayed(calculation_worker)(
+					parameters[exp_idx],
+					exp_datas[exp_idx],
+					args.mode,
+					args.initial_increment,
+					args.threshold_increment,
+					0,
+					sign
+				) for exp_idx in target_list
+					for sign in [negative, positive]
+			])
+
+		else:
+			# single-thread
+			for exp_idx in target_list:
+				for sign in [negative, positive]:
+					new_parameters.append(calculation_worker(
+						parameters[exp_idx],
+						exp_datas[exp_idx],
+						args.mode,
+						args.initial_increment,
+						args.threshold_increment,
+						args.verbose,
+						sign
+					))
+
+		for idx, exp_idx in enumerate(target_list):
+			parameters[exp_idx].set_parameter_error("all", new_parameters[idx + 0].get_parameter())
+			parameters[exp_idx].set_parameter_error("all", new_parameters[idx + 1].get_parameter())
+		sys.stderr.write("done.\n")
+
+	elif args.flag_error_strict:
+		sys.stderr.write("Optimize parameters with errors by strict mode.\n")
+		max_iter = len(list(itertools.product([-1, 1], repeat = len(exp_datas[0].get_sequence()))))
+		if args.thread is not None:
+			for exp_idx in target_list:
 				sys.stderr.write("Calculalte for {0} with error: {1} steps\n".format(exp_label[exp_idx], max_iter))
 				cnt = 0
 				calc_set = []
@@ -362,7 +421,7 @@ if __name__ == '__main__':
 						parameters[exp_idx].set_parameter_error("all", new_parameter.get_parameter())
 
 		else:
-			for exp_idx in [0, 2]:
+			for exp_idx in target_list:
 				# dH and dG with error
 				for exp_error_pattern in itertools.product([-1, 1], repeat = len(exp_datas[0].get_sequence())):
 					new_parameter = calculation_worker(
@@ -378,9 +437,14 @@ if __name__ == '__main__':
 		sys.stderr.write("done.\n")
 
 	# calculate dS
-	dS = {parameter_type: [(parameters[0].get_parameter(parameter_type)[idx] - parameters[2].get_parameter(parameter_type)[idx]) / args.temperature * 1000 for idx in range(2)] for parameter_type in parameter_types}
-	parameters[1].set_parameter("all", dS)
-
+	if not args.flag_separate:
+		dS = {
+			parameter_type: [
+				(parameters[0].get_parameter(parameter_type)[idx] - parameters[2].get_parameter(parameter_type)[idx]) / args.temperature * 1000
+				for idx in range(3)
+			] for parameter_type in parameter_types}
+		for parameter_type in parameter_types:
+			parameters[1].set_parameter(parameter_type, dS[parameter_type])
 
 	# output
 	if args.flag_overwrite == False:
@@ -390,18 +454,20 @@ if __name__ == '__main__':
 		writer = csv.writer(obj_output)
 		writer.writerow(["<< Input >>"])
 		writer.writerow(["Program version", VERSION])
-		writer.writerow(["Experimental data", args.input_file])
+		writer.writerow(["Experimental data", args.experiment_file])
 		writer.writerow(["Initial iteration", args.initial_increment])
 		writer.writerow(["Increment threshold", args.threshold_increment])
 		writer.writerow(["Temperature", args.temperature])
+		writer.writerow(["Separate calculation", args.flag_separate])
+		writer.writerow(["Evaluation mode", args.mode])
 		writer.writerow(["Reference parameter", args.ref_param])
 		writer.writerow([""])
 
 		writer.writerow(["Initial parameter", "dH", "dH (error)", "dS", "dS (error)", "dG", "dG (error)", "", "Change (dH)", "Change (dS)", "Change (dG)"])
 		for parameter_type in parameter_types:
-			parameter_dH = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters_init[0].get_parameter()[parameter_type]]
-			parameter_dS = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters_init[1].get_parameter()[parameter_type]]
-			parameter_dG = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters_init[2].get_parameter()[parameter_type]]
+			parameter_dH = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters_init[0].get_parameter(data_type = "correction")[parameter_type]]
+			parameter_dS = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters_init[1].get_parameter(data_type = "correction")[parameter_type]]
+			parameter_dG = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters_init[2].get_parameter(data_type = "correction")[parameter_type]]
 
 			writer.writerow([
 				parameter_type,
@@ -419,9 +485,9 @@ if __name__ == '__main__':
 		writer.writerow(["<< Results >>"])
 		writer.writerow(["Parameter (optimized)", "dH", "dH (error)", "dS", "dS (error)", "dG", "dG (error)", "", "Change (dH)", "Change (dS)", "Change (dG)"])
 		for parameter_type in parameter_types:
-			parameter_dH = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters[0].get_parameter()[parameter_type]]
-			parameter_dS = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters[1].get_parameter()[parameter_type]]
-			parameter_dG = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters[2].get_parameter()[parameter_type]]
+			parameter_dH = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters[0].get_parameter(data_type = "correction")[parameter_type]]
+			parameter_dS = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters[1].get_parameter(data_type = "correction")[parameter_type]]
+			parameter_dG = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters[2].get_parameter(data_type = "correction")[parameter_type]]
 
 			writer.writerow([
 				parameter_type,
@@ -482,5 +548,3 @@ if __name__ == '__main__':
 		writer.writerow(["(Stat: Diff Mean)"] + [exp_datas[idx].get_stat(parameters[idx], "diff_mean") for idx in range(3)])
 		writer.writerow(["(Stat: Diff Sum)"] + [exp_datas[idx].get_stat(parameters[idx], "diff_sum") for idx in range(3)])
 		writer.writerow(["(Stat: Diff Sq)"] + [exp_datas[idx].get_stat(parameters[idx], "diff_square") for idx in range(3)])
-		writer.writerow([""])
-		writer.writerow([""])
