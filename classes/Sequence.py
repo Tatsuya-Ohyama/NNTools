@@ -176,13 +176,13 @@ class Sequence:
 		energy = 0.0
 		if self._sequence[0] in ["G", "C"]:
 			# init_GC
-			energy += obj_parameter.get_parameter("init_GC")
+			energy += obj_parameter.get_parameter("init_GC")[0]
 		elif self._sequence[0] in ["A", "T"]:
 			# init_AT
-			energy += obj_parameter.get_parameter("init_AT")
+			energy += obj_parameter.get_parameter("init_AT")[0]
 			if self._sequence[0] == "T":
 				# 5term_TA
-				energy += obj_parameter.get_parameter("5term_TA")
+				energy += obj_parameter.get_parameter("5term_TA")[0]
 		else:
 			sys.stderr.write("ERROR: undefined initiation base pair.\n")
 			sys.exit(1)
@@ -195,10 +195,10 @@ class Sequence:
 			if pair_type not in parameter_list:
 				pair_type = "/".join(["".join(reversed(pair_reverse)), "".join(reversed(pair_forward))])
 
-			energy += obj_parameter.get_parameter(pair_type)
+			energy += obj_parameter.get_parameter(pair_type)[0]
 
 		if self._is_self_complement:
-			energy += obj_parameter.get_parameter("symmetry")
+			energy += obj_parameter.get_parameter("symmetry")[0]
 
 		return energy
 
