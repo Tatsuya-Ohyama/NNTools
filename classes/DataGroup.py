@@ -68,7 +68,7 @@ class DataGroup:
 		self._sequences.append(obj_sequence)
 		self._energy.append(exp_value)
 		self._error.append(exp_value_e)
-		self._error_sign 0
+		self._error_sign.append(0)
 		return self
 
 
