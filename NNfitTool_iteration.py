@@ -25,7 +25,7 @@ from classes.DataGroup import DataGroup
 
 # =============== variable =============== #
 parameter_types = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "5term_TA"]
-VERSION = 75
+VERSION = "4.1 (#86)"
 
 
 # =============== function =============== #
@@ -311,7 +311,7 @@ if __name__ == '__main__':
 	sys.stderr.write("Optimize parameters.\n")
 	if args.thread is not None:
 		# multi-thread
-		parameters_tmp = Parallel(n_jobs = 2)([
+		parameters_tmp = Parallel(n_jobs = args.thread)([
 			delayed(calculation_worker)(
 				parameters[exp_idx],
 				exp_datas[exp_idx],
@@ -320,8 +320,11 @@ if __name__ == '__main__':
 				args.threshold_increment,
 				0
 			) for exp_idx in target_list])
-		parameters[0] = parameters_tmp[0]
-		parameters[2] = parameters_tmp[1]
+		if args.flag_separate:
+			parameters = parameters_tmp
+		else:
+			parameters[0] = parameters_tmp[0]
+			parameters[2] = parameters_tmp[1]
 
 	else:
 		# single-thread
@@ -360,6 +363,7 @@ if __name__ == '__main__':
 		else:
 			# single-thread
 			for exp_idx in target_list:
+				# exp values with errors
 				for sign in [negative, positive]:
 					new_parameters.append(calculation_worker(
 						parameters[exp_idx],
@@ -372,8 +376,8 @@ if __name__ == '__main__':
 					))
 
 		for idx, exp_idx in enumerate(target_list):
-			parameters[exp_idx].set_parameter_error("all", new_parameters[idx + 0].get_parameter())
-			parameters[exp_idx].set_parameter_error("all", new_parameters[idx + 1].get_parameter())
+			parameters[exp_idx].update_parameter_error("all", new_parameters[idx * 2 + 0].get_parameter())
+			parameters[exp_idx].update_parameter_error("all", new_parameters[idx * 2 + 1].get_parameter())
 		sys.stderr.write("done.\n")
 
 	elif args.flag_error_strict:
@@ -401,7 +405,7 @@ if __name__ == '__main__':
 							) for error_pattern in calc_set
 						])
 						for new_parameter in parameter_c:
-							parameters[exp_idx].set_parameter_error("all", new_parameter.get_parameter())
+							parameters[exp_idx].update_parameter_error("all", new_parameter.get_parameter())
 						calc_set = []
 						sys.stderr.write("calculation of {0} with error for {1}-{2} ... done.\n".format(exp_label[exp_idx], job_idx + 1 - 50, job_idx + 1))
 
@@ -418,11 +422,11 @@ if __name__ == '__main__':
 						) for error_pattern in calc_set
 					])
 					for new_parameter in parameter_c:
-						parameters[exp_idx].set_parameter_error("all", new_parameter.get_parameter())
+						parameters[exp_idx].update_parameter_error("all", new_parameter.get_parameter())
 
 		else:
 			for exp_idx in target_list:
-				# dH and dG with error
+				# exp values with error
 				for exp_error_pattern in itertools.product([-1, 1], repeat = len(exp_datas[0].get_sequence())):
 					new_parameter = calculation_worker(
 						parameters[exp_idx],
@@ -433,14 +437,14 @@ if __name__ == '__main__':
 						args.verbose,
 						exp_error_pattern
 					)
-					parameters[exp_idx].set_parameter_error("all", new_parameter.get_parameter())
+					parameters[exp_idx].update_parameter_error("all", new_parameter.get_parameter())
 		sys.stderr.write("done.\n")
 
 	# calculate dS
 	if not args.flag_separate:
 		dS = {
 			parameter_type: [
-				(parameters[0].get_parameter(parameter_type)[idx] - parameters[2].get_parameter(parameter_type)[idx]) / args.temperature * 1000
+				(parameters[0].get_parameter(parameter_type, data_type = "raw")[idx] - parameters[2].get_parameter(parameter_type, data_type = "raw")[idx]) / args.temperature * 1000
 				for idx in range(3)
 			] for parameter_type in parameter_types}
 		for parameter_type in parameter_types:
@@ -465,9 +469,9 @@ if __name__ == '__main__':
 
 		writer.writerow(["Initial parameter", "dH", "dH (error)", "dS", "dS (error)", "dG", "dG (error)", "", "Change (dH)", "Change (dS)", "Change (dG)"])
 		for parameter_type in parameter_types:
-			parameter_dH = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters_init[0].get_parameter(data_type = "correction")[parameter_type]]
-			parameter_dS = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters_init[1].get_parameter(data_type = "correction")[parameter_type]]
-			parameter_dG = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters_init[2].get_parameter(data_type = "correction")[parameter_type]]
+			parameter_dH = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters_init[0].get_parameter(data_type = "fix")[parameter_type]]
+			parameter_dS = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters_init[1].get_parameter(data_type = "fix")[parameter_type]]
+			parameter_dG = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters_init[2].get_parameter(data_type = "fix")[parameter_type]]
 
 			writer.writerow([
 				parameter_type,
@@ -485,9 +489,9 @@ if __name__ == '__main__':
 		writer.writerow(["<< Results >>"])
 		writer.writerow(["Parameter (optimized)", "dH", "dH (error)", "dS", "dS (error)", "dG", "dG (error)", "", "Change (dH)", "Change (dS)", "Change (dG)"])
 		for parameter_type in parameter_types:
-			parameter_dH = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters[0].get_parameter(data_type = "correction")[parameter_type]]
-			parameter_dS = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters[1].get_parameter(data_type = "correction")[parameter_type]]
-			parameter_dG = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters[2].get_parameter(data_type = "correction")[parameter_type]]
+			parameter_dH = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters[0].get_parameter(data_type = "fix")[parameter_type]]
+			parameter_dS = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters[1].get_parameter(data_type = "fix")[parameter_type]]
+			parameter_dG = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters[2].get_parameter(data_type = "fix")[parameter_type]]
 
 			writer.writerow([
 				parameter_type,
