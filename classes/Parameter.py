@@ -81,7 +81,7 @@ class Parameter:
 
 	def set_parameter(self, parameter_type, parameter_val = None):
 		"""
-		set parameter method
+		set parameter with error method
 		@param parameter_type: parameter name (all, "AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", or "5term_TA")
 		@param parameter_val: parameter value ([parameter, +error, -error] or parameter)
 		@return self
@@ -101,16 +101,17 @@ class Parameter:
 				if type(parameter_val) == list:
 					self._parameters[parameter_type] = [float(x) for x in parameter_val]
 				else:
-					self._parameters[parameter_type] = [float(parameter_val), 0.0, 0.0]
+					self._parameters[parameter_type] = [float(parameter_val)] * 3
 		else:
 			sys.stderr.write("ERROR: undefined parameter_type in set_parameter() of ParameterData class ({0}).\n".format(parameter_type))
 			sys.exit(1)
 
 		return self
 
-	def set_parameter_error(self, parameter_type, parameter_value):
+
+	def update_parameter_error(self, parameter_type, parameter_value):
 		"""
-		set parameter error
+		calculate and set error method
 		@param parameter_type: parameter type or "all"
 		@param parameter_value: parameter value for one parameter type or parameter value list for "all"
 		@return self
@@ -127,19 +128,16 @@ class Parameter:
 			parameter_types = [parameter_type]
 			parameter_values = [parameter_value]
 
-		for idx in range(len(parameter_types)):
-			if self._change[parameter_types[idx]]:
-				parameter_values[parameter_types[idx]][0] -= self._parameters[parameter_types[idx]][0]
-				if parameter_values[parameter_types[idx]][0] < 0:
-					# negative error
-					if parameter_values[parameter_types[idx]][0] < self._parameters[parameter_types[idx]][1]:
-						# update error
-						self._parameters[parameter_types[idx]][1] = parameter_values[parameter_types[idx]][0]
-				elif 0 < parameter_values[parameter_types[idx]][0]:
-					# positive error
-					if self._parameters[parameter_types[idx]][2] < parameter_values[parameter_types[idx]][0]:
-						# update error
-						self._parameters[parameter_types[idx]][2] = parameter_values[parameter_types[idx]][0]
+		for parameter_type in parameter_types:
+			# loop for parameter types
+			if self._change[parameter_type]:
+				# when chang flag is True
+				if parameter_values[parameter_type][0] < self._parameters[parameter_type][1]:
+					# update minimum value
+					self._parameters[parameter_type][1] = parameter_values[parameter_type][0]
+				elif self._parameters[parameter_type][2] < parameter_values[parameter_type][0]:
+					# update maximum value
+					self._parameters[parameter_type][2] = parameter_values[parameter_type][0]
 		return self
 
 
@@ -206,15 +204,15 @@ class Parameter:
 		"""
 		return parameter
 		@param parameter_type: parameter type
-		@param data_type: raw ([value, error-, error+]) or correction (value, error+/-)
+		@param data_type: raw ([value, error-, error+]) or fix (value, error+/-)
 		@return parameter (list for None(all) or float value for each parameter)
 		"""
 		values = {}
 		if data_type == "raw":
 			values = self._parameters
-		elif data_type == "correction":
-			error = {k: (abs(v[1]) + abs(v[2])) / 2 for k, v in self._parameters.items()}
-			values = {k: [v[0] - abs(v[1]) + error[k], error[k]] for k, v in self._parameters.items()}
+		elif data_type == "fix":
+			error = {k: abs(v[1] - v[2]) / 2 for k, v in self._parameters.items()}
+			values = {k: [v[1] + error[k], error[k]] for k, v in self._parameters.items()}
 		else:
 			sys.stderr.write("ERROR: undefined data_type at get_parameter() in Parameter class.\n")
 			sys.exit(1)
