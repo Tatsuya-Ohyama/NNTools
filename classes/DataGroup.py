@@ -18,6 +18,8 @@ class DataGroup:
 		self._name = ""
 		self._sequences = []
 		self._energy = []
+		self._error = []
+		self._error_sign = []
 
 		# initiation
 		self.set_name(name)
@@ -56,7 +58,7 @@ class DataGroup:
 		return self
 
 
-	def append(self, obj_sequence, exp_value):
+	def append(self, obj_sequence, exp_value, exp_value_e = 0.0):
 		"""
 		append sequence object and experimental data
 		@param obj_sequence: Sequence object
@@ -65,6 +67,8 @@ class DataGroup:
 		"""
 		self._sequences.append(obj_sequence)
 		self._energy.append(exp_value)
+		self._error.append(exp_value_e)
+		self._error_sign.append(0)
 		return self
 
 
@@ -98,21 +102,23 @@ class DataGroup:
 		energy = []
 		if flag_sequence:
 			energy = [[sequence.get_sequence("string") for sequence in self._sequences]]
-		energy += [self._energy]
+		energy += [self._energy] + [self._error]
 		energy += [[sequence.get_energy(parameter) for sequence in self._sequences] for parameter in obj_parameters]
 		energy = [[energy[row_idx][col_idx] for row_idx in range(len(energy))] for col_idx in range(len(energy[0]))]
 		return energy
 
 
-	def get_stat(self, obj_parameter, data_type = None, deg = 1):
+	def get_stat(self, obj_parameter, mode = None, deg = 1, error_sign = None):
 		"""
 		return statistics
-		@param data_type: None, "r", "r2", "slope", "intercept", "diff_abs", "diff_mean", "diff_std", "diff_sum, diff_square" (Default: None)
+		@param mode: None, "r", "r2", "slope", "intercept", "diff_abs", "diff_mean", "diff_std", "diff_sum, diff_square" (Default: None)
 		@param obj_parameter: degree of the fitting polynomial (Default: 1)
 		@param deg:
 		@return statistics value or return [r, r2, slope, intercept, diff_abs, diff_mean, diff_std, diff_sum, diff_square] list when data_type is None
 		"""
-		x = np.array(self._energy)
+		if type(error_sign) != list:
+			error_sign = self._error_sign
+		x = np.array([self._energy[idx] + self._error[idx] * error_sign[idx] for idx in range(len(self._energy))])
 		y = np.array([sequence.get_energy(obj_parameter) for sequence in self._sequences])
 		result = [float(x) for x in np.polyfit(x, y, deg).tolist()]
 		if y[y == 0.0].shape[0] == len(self._sequences) or np.std(x) == 0.0 or np.std(y) == 0.0:
@@ -127,28 +133,28 @@ class DataGroup:
 		result.append(np.sum(np.abs(x - y)))
 		result.append(np.sum((x - y) ** 2))
 
-		if data_type is None:
+		if mode is None:
 			return result
-		elif data_type == "slope":
+		elif mode == "slope":
 			return result[0]
-		elif data_type == "intercept":
+		elif mode == "intercept":
 			return result[1]
-		elif data_type == "r":
+		elif mode == "r":
 			return result[2]
-		elif data_type == "r2":
+		elif mode == "r2":
 			return result[3]
-		elif data_type == "diff_abs":
+		elif mode == "diff_abs":
 			return result[4]
-		elif data_type == "diff_mean":
+		elif mode == "diff_mean":
 			return result[5]
-		elif data_type == "diff_std":
+		elif mode == "diff_std":
 			return result[6]
-		elif data_type == "diff_sum":
+		elif mode == "diff_sum":
 			return result[7]
-		elif data_type == "diff_square":
+		elif mode == "diff_square":
 			return result[8]
 		else:
-			sys.stderr.write("ERROR: undefined data_type at get_stat() in DataGroup class.\n")
+			sys.stderr.write("ERROR: undefined mode at get_stat() in DataGroup class.\n")
 			sys.exit(1)
 
 
