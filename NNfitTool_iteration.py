@@ -25,7 +25,7 @@ from classes.DataGroup import DataGroup
 
 # =============== variable =============== #
 parameter_types = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "5term_TA"]
-VERSION = "4.2 (#89)"
+VERSION = "4.3 (#91)"
 
 
 # =============== function =============== #
@@ -527,28 +527,21 @@ if __name__ == '__main__':
 			"Diff. (dG)",
 			""
 			] + parameter_types)
-		datas = []
-		datas.append(exp_datas[0].get_energy(flag_sequence = True))
-		datas.append(exp_datas[1].get_energy(flag_sequence = True))
-		datas.append(exp_datas[2].get_energy(flag_sequence = True))
-		datas.append(exp_datas[0].get_energy(flag_sequence = True, obj_parameters = [parameters[0]]))
-		datas.append(exp_datas[1].get_energy(flag_sequence = True, obj_parameters = [parameters[1]]))
-		datas.append(exp_datas[2].get_energy(flag_sequence = True, obj_parameters = [parameters[2]]))
 
-		for sequence in exp_datas[0].get_sequence():
+		for sequence, dH, dS, dG in zip(exp_datas[0].get_sequence(), exp_datas[0].get_energy(flag_sequence = True, obj_parameters = [parameters[0]]), exp_datas[1].get_energy(flag_sequence = True, obj_parameters = [parameters[1]]), exp_datas[2].get_energy(flag_sequence = True, obj_parameters = [parameters[2]])):
 			name = sequence.get_name()
 			seq = sequence.get_sequence("string")
-			exp_dH = [x[1] for x in datas[0] if x[0] == seq][0]
-			exp_dS = [x[1] for x in datas[1] if x[0] == seq][0]
-			exp_dG = [x[1] for x in datas[2] if x[0] == seq][0]
-			dH = [x[2] for x in datas[3] if x[0] == seq][0]
-			dS = [x[2] for x in datas[4] if x[0] == seq][0]
-			dG = [x[2] for x in datas[5] if x[0] == seq][0]
-			diff_dH = dH - exp_dH
-			diff_dS = dS - exp_dS
-			diff_dG = dG - exp_dG
+			exp_dH = dH[1]
+			exp_dS = dS[1]
+			exp_dG = dG[1]
+			pred_dH = dH[3]
+			pred_dS = dS[3]
+			pred_dG = dG[3]
+			diff_dH = pred_dH - exp_dH
+			diff_dS = pred_dS - exp_dS
+			diff_dG = pred_dG - exp_dG
 			freq = [sequence.get_freq()[parameter_type] for parameter_type in parameter_types]
-			writer.writerow([name, seq, exp_dH, exp_dS, exp_dG, dH, dS, dG, diff_dH, diff_dS, diff_dG] + [""] + freq)
+			writer.writerow([name, seq, exp_dH, exp_dS, exp_dG, pred_dH, pred_dS, pred_dG, diff_dH, diff_dS, diff_dG] + [""] + freq)
 		writer.writerow([""])
 
 		writer.writerow(["Correlation: exp. vs predict", "", "dH", "dS", "dG"])
