@@ -25,7 +25,7 @@ from classes.DataGroup import DataGroup
 
 # =============== variable =============== #
 parameter_types = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "5term_TA"]
-VERSION = "4.3 (#91)"
+VERSION = "4.4 (#97)"
 
 
 # =============== function =============== #
@@ -132,7 +132,7 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 
 
 		if 2 <= verbose:
-			print("-" * 75)
+			print("-" * 57)
 			print("{0} at {1} steps (dt = {2})  Mode: {3}".format(exp_label[exp_idx], cnt_i, increment, mode))
 
 		# calculate diff statistic values between prev and present
