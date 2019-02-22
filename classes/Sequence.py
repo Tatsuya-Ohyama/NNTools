@@ -29,9 +29,10 @@ class Sequence:
 
 	def save_pickle(self, output_file):
 		"""
-		Pickle ファイルに保存するメソッド
-		@param output_file: 出力する pickle ファイルのパス
-		@return: 自身を返す (チェーンメソッドのため)"""
+		save to pickle
+		@param output_file: output pickle file path
+		@return self (for chain method)
+		"""
 		with open(output_file, "wb") as obj_output:
 			pickle.dump(self, obj_output)
 			sys.stderr.write("INFO: save pickle file to '{0}'\n".format(output_file))
@@ -40,9 +41,10 @@ class Sequence:
 
 	def restore_pickle(self, input_file):
 		"""
-		Pickle ファイルから復元するメソッド
-		@param input_file: pickle ファイルのパス
-		@return: 自身を返す (チェーンメソッドのため)
+		restore from pickle
+		@param input_file: pickle file path
+		@return self (for chain method)
+		@return self (for chain method)
 		"""
 		with open(input_file, "rb") as obj_input:
 			self = pickle.load(obj_input)
@@ -172,7 +174,7 @@ class Sequence:
 		@param obj_parameter: Parameter object
 		@return energy_value
 		"""
-		# エネルギーを計算させる
+		# calculate energy
 		energy = 0.0
 		if self._sequence[0] in ["G", "C"]:
 			# init_GC
