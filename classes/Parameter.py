@@ -48,9 +48,10 @@ class Parameter:
 
 	def save_pickle(self, output_file):
 		"""
-		Pickle ファイルに保存するメソッド
-		@param output_file: 出力する pickle ファイルのパス
-		@return: 自身を返す (チェーンメソッドのため)"""
+		save to pickle
+		@param output_file: output pickle file path
+		@return self (for chain method)
+		"""
 		with open(output_file, "wb") as obj_output:
 			pickle.dump(self, obj_output)
 			sys.stderr.write("INFO: save pickle file to '{0}'\n".format(output_file))
@@ -59,9 +60,10 @@ class Parameter:
 
 	def restore_pickle(self, input_file):
 		"""
-		Pickle ファイルから復元するメソッド
-		@param input_file: pickle ファイルのパス
-		@return: 自身を返す (チェーンメソッドのため)
+		restore from pickle
+		@param input_file: pickle file path
+		@return self (for chain method)
+		@return self (for chain method)
 		"""
 		with open(input_file, "rb") as obj_input:
 			self = pickle.load(obj_input)
@@ -87,16 +89,16 @@ class Parameter:
 		@return self
 		"""
 		if parameter_type == "all":
-			# すべての場合、そのまま引き受ける
+			# All data are received without modification
 			self._parameters = {x: [float(y[idx]) for idx in range(3)] if self._change[x] else self._parameters[x] for x, y in parameter_val.items()}
 			return self
 
 		if parameter_type not in parameter_list:
-			# パラメータが相補鎖の形式で含まれる場合
+			# parameter include by complementary sequence
 			parameter_type = [k for k, v in complement_list.items()][0]
 
 		if parameter_type in parameter_list:
-			# パラメータ名が含まれる場合
+			# include parameter name
 			if self._change[parameter_type]:
 				if type(parameter_val) == list:
 					self._parameters[parameter_type] = [float(x) for x in parameter_val]
@@ -218,13 +220,13 @@ class Parameter:
 			sys.exit(1)
 
 		if parameter_type in parameter_list:
-			# パラメータタイプが存在する場合
+			# exist parameter_type
 			return values[parameter_type]
 		elif parameter_type in complement_list.values():
 			parameter_key = [k for k, v in complement_list.items()][0]
 			return values[parameter_key]
 		else:
-			# すべてのパラメータが指定された場合
+			# all parameters are specified
 			return values
 
 
