@@ -99,13 +99,17 @@ class DataGroup:
 		@param obj_parameters: Parameter object list (Default: [])
 		@return energy value list
 		"""
-		energy = []
-		if flag_sequence:
-			energy = [[sequence.get_sequence("string") for sequence in self._sequences]]
-		energy += [self._energy] + [self._error]
-		energy += [[sequence.get_energy(parameter) for sequence in self._sequences] for parameter in obj_parameters]
-		energy = [[energy[row_idx][col_idx] for row_idx in range(len(energy))] for col_idx in range(len(energy[0]))]
-		return energy
+		energy_data = []
+		for idx in range(len(self._sequences)):
+			data = []
+			if flag_sequence:
+				data.append(self._sequences[idx].get_sequence("string"))
+			data.append(self._energy[idx])
+			data.append(self._error[idx])
+			for parameter in obj_parameters:
+				data.append(self._sequences[idx].get_energy(parameter))
+			energy_data.append(data)
+		return energy_data
 
 
 	def get_stat(self, obj_parameter, mode = None, deg = 1, error_sign = None):

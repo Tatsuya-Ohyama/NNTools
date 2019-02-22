@@ -25,7 +25,7 @@ from classes.DataGroup import DataGroup
 
 # =============== variable =============== #
 parameter_types = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "5term_TA"]
-VERSION = "4.1 (#86)"
+VERSION = "4.3 (#91)"
 
 
 # =============== function =============== #
@@ -48,7 +48,9 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 		cnt_i += 1
 		for parameter_idx, parameter_type in enumerate(parameter_types):
 			# loop for parameters
-			if direction[parameter_idx] == False:
+			evaluation_val_direction = []
+			evaluation_val_tmp = []
+			if direction[parameter_idx] == 0:
 				# When not determine direction, determined direction
 				# create 0,+,- changed parameter object
 				parameter_plus = parameters_opt[parameter_idx].clone()
@@ -59,36 +61,38 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 				parameter_minus.set_parameter(parameter_type, parameter_minus.get_parameter(parameter_type)[0] - increment)
 
 				# evaluation
-				evaluation_val_tmp = []
 				if error_sign is None:
-					evaluation_val_tmp.append(exp_data.get_stat(parameters_opt[parameter_idx], mode))
-					evaluation_val_tmp.append(exp_data.get_stat(parameter_plus, mode))
-					evaluation_val_tmp.append(exp_data.get_stat(parameter_minus, mode))
 					evaluation_prev[parameter_idx] = exp_data.get_stat(parameters_opt[parameter_idx], mode)
+					evaluation_val_direction.append(evaluation_prev[parameter_idx])
+					evaluation_val_direction.append(exp_data.get_stat(parameter_plus, mode))
+					evaluation_val_direction.append(exp_data.get_stat(parameter_minus, mode))
 				else:
-					evaluation_val_tmp.append(exp_data.get_stat(parameters_opt[parameter_idx], mode, error_sign = error_sign))
-					evaluation_val_tmp.append(exp_data.get_stat(parameter_plus, mode, error_sign = error_sign))
-					evaluation_val_tmp.append(exp_data.get_stat(parameter_minus, mode, error_sign = error_sign))
 					evaluation_prev[parameter_idx] = exp_data.get_stat(parameters_opt[parameter_idx], mode, error_sign = error_sign)
+					evaluation_val_direction.append(evaluation_prev[parameter_idx])
+					evaluation_val_tmp.append(evaluation_prev[parameter_idx])
+					evaluation_val_direction.append(exp_data.get_stat(parameter_plus, mode, error_sign = error_sign))
+					evaluation_val_direction.append(exp_data.get_stat(parameter_minus, mode, error_sign = error_sign))
+				evaluation_val_tmp.append(evaluation_prev[parameter_idx])
 
 				# determine direction
-				min_val = min(evaluation_val_tmp)
-				min_val_idx = [i for i, x in enumerate(evaluation_val_tmp) if min_val == x]
+				min_val = min(evaluation_val_direction)
+				min_val_idx = [i for i, x in enumerate(evaluation_val_direction) if min_val == x]
 				if len(min_val_idx) != 1 or min_val_idx[0] == 0:
 					# When all evaluation_val_tmp is the same even if parameter is changed
 					# When evaluation_val_tmp value for base parameter is closest to 1, lock changing
-					if error_sign is None:
-						evaluation_val[parameter_idx] = exp_data.get_stat(parameters_opt[parameter_idx], mode)
-					else:
-						evaluation_val[parameter_idx] = exp_data.get_stat(parameters_opt[parameter_idx], mode, error_sign = error_sign)
+					evaluation_val[parameter_idx] = evaluation_val_direction[0]
+					evaluation_val_tmp.append(evaluation_val_direction[0])
+					continue
 
 				elif min_val_idx[0] == 1:
 					# When evaluation for plus parameter is adopted
 					direction[parameter_idx] = 1
+					evaluation_val_tmp.append(evaluation_val_direction[1])
 
 				elif min_val_idx[0] == 2:
 					# When evaluation for minus parameter is adopted
 					direction[parameter_idx] = -1
+					evaluation_val_tmp.append(evaluation_val_direction[2])
 
 				else:
 					sys.stderr.write("ERROR: undefined condition.\n")
@@ -100,13 +104,14 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 			parameter_new.set_parameter(parameter_type, parameter_new.get_parameter(parameter_type)[0] + direction[parameter_idx] * increment)
 
 			# evaluation by mode
-			evaluation_val_tmp = []
-			if error_sign is None:
-				evaluation_val_tmp.append(exp_data.get_stat(parameters_opt[parameter_idx], mode))
-				evaluation_val_tmp.append(exp_data.get_stat(parameter_new, mode))
-			else:
-				evaluation_val_tmp.append(exp_data.get_stat(parameters_opt[parameter_idx], mode, error_sign = error_sign))
-				evaluation_val_tmp.append(exp_data.get_stat(parameter_new, mode, error_sign = error_sign))
+			if len(evaluation_val_tmp) == 0:
+				# When direction determine step is skipped (ex. more than 2nd calculation for determined direction parameter)
+				if error_sign is None:
+					evaluation_val_tmp.append(exp_data.get_stat(parameters_opt[parameter_idx], mode))
+					evaluation_val_tmp.append(exp_data.get_stat(parameter_new, mode))
+				else:
+					evaluation_val_tmp.append(exp_data.get_stat(parameters_opt[parameter_idx], mode, error_sign = error_sign))
+					evaluation_val_tmp.append(exp_data.get_stat(parameter_new, mode, error_sign = error_sign))
 
 			# choose parameter from statistics values (minimum value)
 			min_val = min(evaluation_val_tmp)
@@ -125,6 +130,7 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 			else:
 				sys.stderr.write("ERROR: undefined condition.\n")
 				sys.exit(1)
+
 
 		if 2 <= verbose:
 			print("-" * 75)
@@ -204,8 +210,8 @@ if __name__ == '__main__':
 	output_group.add_argument("-O", dest = "flag_overwrite", action = "store_true", default = False, help = "overwrite forcibly")
 
 	config_group = parser.add_argument_group("Config")
-	config_group.add_argument("-d", dest = "threshold_increment", metavar = "THRESHOLD", type = float, default = 0.00001, help = "difference threshold of increment for searching (Default: 0.00001)")
-	config_group.add_argument("-i", dest = "initial_increment", metavar = "INITIAL_INCREMENT", type = float, default = 0.01, help = "initial increment (Default: 1.0)")
+	config_group.add_argument("-d", dest = "threshold_increment", metavar = "THRESHOLD", type = float, default = 0.01, help = "difference threshold of increment for searching (Default: 0.01)")
+	config_group.add_argument("-i", dest = "initial_increment", metavar = "INITIAL_INCREMENT", type = float, default = 1.0, help = "initial increment (Default: 1.0)")
 	config_group.add_argument("-T", dest = "temperature", metavar = "TEMPERATURE", type = float, default = 310.15, help = "temperature for experimental data (Default: 310.15)")
 	config_group.add_argument("-m", dest = "mode", metavar = "EVALUATION_METHOD", default = "diff_square", choices = ["r", "r2", "diff_mean", "diff_std", "diff_sum", "diff_square"], help = "evaluation method (r, r2, diff_mean, diff_std, diff_sum, diff_square) (Default: diff_square)")
 	config_group.add_argument("-S", dest = "flag_separate", action = "store_true", default = False, help = "Separately calculate dS (Default: OFF (dS is calculated by Gibbs free energy equation))")
@@ -467,7 +473,7 @@ if __name__ == '__main__':
 		writer.writerow(["Reference parameter", args.ref_param])
 		writer.writerow([""])
 
-		writer.writerow(["Initial parameter", "dH", "dH (error)", "dS", "dS (error)", "dG", "dG (error)", "", "Change (dH)", "Change (dS)", "Change (dG)"])
+		writer.writerow(["Initial parameter", "dH", "dS", "dG", "", "Change (dH)", "Change (dS)", "Change (dG)"])
 		for parameter_type in parameter_types:
 			parameter_dH = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters_init[0].get_parameter(data_type = "fix")[parameter_type]]
 			parameter_dS = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters_init[1].get_parameter(data_type = "fix")[parameter_type]]
@@ -475,9 +481,9 @@ if __name__ == '__main__':
 
 			writer.writerow([
 				parameter_type,
-				parameter_dH[0], parameter_dH[1],
-				parameter_dS[0], parameter_dS[1],
-				parameter_dG[0], parameter_dG[1],
+				parameter_dH[0],
+				parameter_dS[0],
+				parameter_dG[0],
 				"",
 				parameters_init[0].is_change(parameter_type),
 				parameters_init[1].is_change(parameter_type),
@@ -521,34 +527,28 @@ if __name__ == '__main__':
 			"Diff. (dG)",
 			""
 			] + parameter_types)
-		datas = []
-		datas.append(exp_datas[0].get_energy(flag_sequence = True))
-		datas.append(exp_datas[1].get_energy(flag_sequence = True))
-		datas.append(exp_datas[2].get_energy(flag_sequence = True))
-		datas.append(exp_datas[0].get_energy(flag_sequence = True, obj_parameters = [parameters[0]]))
-		datas.append(exp_datas[1].get_energy(flag_sequence = True, obj_parameters = [parameters[1]]))
-		datas.append(exp_datas[2].get_energy(flag_sequence = True, obj_parameters = [parameters[2]]))
 
-		for sequence in exp_datas[0].get_sequence():
+		for sequence, dH, dS, dG in zip(exp_datas[0].get_sequence(), exp_datas[0].get_energy(flag_sequence = True, obj_parameters = [parameters[0]]), exp_datas[1].get_energy(flag_sequence = True, obj_parameters = [parameters[1]]), exp_datas[2].get_energy(flag_sequence = True, obj_parameters = [parameters[2]])):
 			name = sequence.get_name()
 			seq = sequence.get_sequence("string")
-			exp_dH = [x[1] for x in datas[0] if x[0] == seq][0]
-			exp_dS = [x[1] for x in datas[1] if x[0] == seq][0]
-			exp_dG = [x[1] for x in datas[2] if x[0] == seq][0]
-			dH = [x[2] for x in datas[3] if x[0] == seq][0]
-			dS = [x[2] for x in datas[4] if x[0] == seq][0]
-			dG = [x[2] for x in datas[5] if x[0] == seq][0]
-			diff_dH = dH - exp_dH
-			diff_dS = dS - exp_dS
-			diff_dG = dG - exp_dG
+			exp_dH = dH[1]
+			exp_dS = dS[1]
+			exp_dG = dG[1]
+			pred_dH = dH[3]
+			pred_dS = dS[3]
+			pred_dG = dG[3]
+			diff_dH = pred_dH - exp_dH
+			diff_dS = pred_dS - exp_dS
+			diff_dG = pred_dG - exp_dG
 			freq = [sequence.get_freq()[parameter_type] for parameter_type in parameter_types]
-			writer.writerow([name, seq, exp_dH, exp_dS, exp_dG, dH, dS, dG, diff_dH, diff_dS, diff_dG] + [""] + freq)
+			writer.writerow([name, seq, exp_dH, exp_dS, exp_dG, pred_dH, pred_dS, pred_dG, diff_dH, diff_dS, diff_dG] + [""] + freq)
 		writer.writerow([""])
 
-		writer.writerow(["(Stat: R)"] + [exp_datas[idx].get_stat(parameters[idx], "r") for idx in range(3)])
-		writer.writerow(["(Stat: R2)"] + [exp_datas[idx].get_stat(parameters[idx], "r2") for idx in range(3)])
-		writer.writerow(["(Stat: Slope)"] + [exp_datas[idx].get_stat(parameters[idx], "slope") for idx in range(3)])
-		writer.writerow(["(Stat: Intercept)"] + [exp_datas[idx].get_stat(parameters[idx], "intercept") for idx in range(3)])
-		writer.writerow(["(Stat: Diff Mean)"] + [exp_datas[idx].get_stat(parameters[idx], "diff_mean") for idx in range(3)])
-		writer.writerow(["(Stat: Diff Sum)"] + [exp_datas[idx].get_stat(parameters[idx], "diff_sum") for idx in range(3)])
-		writer.writerow(["(Stat: Diff Sq)"] + [exp_datas[idx].get_stat(parameters[idx], "diff_square") for idx in range(3)])
+		writer.writerow(["Correlation: exp. vs predict", "", "dH", "dS", "dG"])
+		writer.writerow(["", "(Stat: R)"] + [exp_datas[idx].get_stat(parameters[idx], "r") for idx in range(3)])
+		writer.writerow(["", "(Stat: R2)"] + [exp_datas[idx].get_stat(parameters[idx], "r2") for idx in range(3)])
+		writer.writerow(["", "(Stat: Slope)"] + [exp_datas[idx].get_stat(parameters[idx], "slope") for idx in range(3)])
+		writer.writerow(["", "(Stat: Intercept)"] + [exp_datas[idx].get_stat(parameters[idx], "intercept") for idx in range(3)])
+		writer.writerow(["", "(Stat: Diff Mean)"] + [exp_datas[idx].get_stat(parameters[idx], "diff_mean") for idx in range(3)])
+		writer.writerow(["", "(Stat: Diff Sum)"] + [exp_datas[idx].get_stat(parameters[idx], "diff_sum") for idx in range(3)])
+		writer.writerow(["", "(Stat: Diff Sq)"] + [exp_datas[idx].get_stat(parameters[idx], "diff_square") for idx in range(3)])
