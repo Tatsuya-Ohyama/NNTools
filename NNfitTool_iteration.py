@@ -69,7 +69,6 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 				else:
 					evaluation_prev[parameter_idx] = exp_data.get_stat(parameters_opt[parameter_idx], mode, error_sign = error_sign)
 					evaluation_val_direction.append(evaluation_prev[parameter_idx])
-					evaluation_val_tmp.append(evaluation_prev[parameter_idx])
 					evaluation_val_direction.append(exp_data.get_stat(parameter_plus, mode, error_sign = error_sign))
 					evaluation_val_direction.append(exp_data.get_stat(parameter_minus, mode, error_sign = error_sign))
 				evaluation_val_tmp.append(evaluation_prev[parameter_idx])
@@ -95,7 +94,7 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 					evaluation_val_tmp.append(evaluation_val_direction[2])
 
 				else:
-					sys.stderr.write("ERROR: undefined condition.\n")
+					sys.stderr.write("ERROR: undefined condition at determination of direction. {0}\n".format(evaluation_val_tmp))
 					sys.exit(1)
 
 			# parepare increased parameter
@@ -128,7 +127,7 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 				evaluation_val[parameter_idx] = evaluation_val_tmp[1]
 
 			else:
-				sys.stderr.write("ERROR: undefined condition. {0}\n".format(min_val_idx[0]))
+				sys.stderr.write("ERROR: undefined condition at evaluation. {0}\n".format(evaluation_val_tmp))
 				sys.exit(1)
 
 
