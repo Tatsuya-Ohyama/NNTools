@@ -128,7 +128,7 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 				evaluation_val[parameter_idx] = evaluation_val_tmp[1]
 
 			else:
-				sys.stderr.write("ERROR: undefined condition.\n")
+				sys.stderr.write("ERROR: undefined condition. {0}\n".format(min_val_idx[0]))
 				sys.exit(1)
 
 
@@ -154,14 +154,14 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 			parameter.set_name(exp_data.get_name())
 
 			if 2 <= verbose:
-				print("{0:^8} {1:^10} {2:^10} {3:^10} {4:^13} {5:^13} {6:^5}".format("Type", "Parameter", "Error-", "Error+", "E=sum(x'-x)^2", "Diff e (Prev)", "Adopt"))
-				print("{0:-^8} {1:-^10} {2:-^10} {3:-^10} {4:-^13} {5:-^13} {6:-^5}".format("", "", "", "", "", "", "", "", "", ""))
-				print("{0:<8} {1:>10} {2:>10} {3:>10} {4:>13.3f}".format("(Prev)", "", "", "", evaluation_prev[0]))
+				print("{0:^8} {1:^10} {2:^3} {3:^13} {4:^13} {5:^5}".format("Type", "Parameter", "Chg", "E=sum(x'-x)^2", "Diff e (Prev)", "Adopt"))
+				print("{0:-^8} {1:-^10} {2:-^3} {3:-^13} {4:-^13} {5:-^5}".format("", "", "", "", "", ""))
+				print("{0:<8} {1:>10} {2:^3} {3:>13.3f}".format("(Prev)", "", "", evaluation_prev[0]))
 				for i, (p, e1, e2, e_diff) in enumerate(zip(parameter_types, evaluation_prev, evaluation_val, evaluation_diff)):
 					if i == max_val_idx:
-						print("{0:<8} {1[0]:>10.3f} {1[1]:>10.3f} {2:>13.3f} {3:>13.3f} {4:^5}".format(p, parameter.get_parameter(p), e2, e_diff, "O"))
+						print("{0:<8} {1[0]:>10.3f} {2:^3} {3:>13.3f} {4:>13.3f} {5:^5}".format(p, parameter.get_parameter(p), str(parameter.is_change(p))[0], e2, e_diff, "O"))
 					else:
-						print("{0:<8} {1[0]:>10.3f} {1[1]:>10.3f} {2:>13.3f} {3:>13.3f}".format(p, parameter.get_parameter(p), e2, e_diff))
+						print("{0:<8} {1[0]:>10.3f} {2:^3} {3:>13.3f} {4:>13.3f}".format(p, parameter.get_parameter(p), str(parameter.is_change(p))[0], e2, e_diff))
 				print("")
 			evaluation_prev = [evaluation_val[max_val_idx] for parameter in parameter_types]
 
@@ -173,10 +173,10 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 	if 1 <= verbose:
 		print("")
 		print("===== Last parameter =====")
-		print("{0:^8} {1:^10} {2:^10} {3:^10}".format("Type", "Parameter", "Error-", "Error+"))
-		print("{0:-^8} {1:-^10} {2:-^10} {3:-^10}".format("", "", "", ""))
+		print("{0:^8} {1:^10} {2:^3} {3:^10} {4:^10}".format("Type", "Parameter", "Chg", "Error-", "Error+"))
+		print("{0:-^8} {1:-^10} {2:-^3} {3:-^10} {4:-^10}".format("", "", "", "", ""))
 		for p in parameter_types:
-			print("{0:<8} {1[0]:>10.3f} {1[1]:>10.3f} {1[2]:>10.3f}".format(p, parameter.get_parameter(p)))
+			print("{0:<8} {1[0]:>10.3f} {2:^3} {1[1]:>10.3f} {1[2]:>10.3f}".format(p, parameter.get_parameter(p), str(parameter.is_change(p))[0]))
 
 		print("")
 		print("===== Comparing experimental data =====")
