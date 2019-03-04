@@ -446,7 +446,12 @@ if __name__ == '__main__':
 		sys.stderr.write("done.\n")
 
 	# calculate dS
-	if not args.flag_separate:
+	if args.flag_separate:
+		# convert unit type: TdS -> dS
+		for parameter_type, parameter_val in parameters[1].get_parameter().items():
+			parameters[1].set_parameter(parameter_type, [value / args.temperature * 1000 for value in parameter_val])
+	else:
+		# calculate dS: (dH - dG) / T * 1000
 		dS = {
 			parameter_type: [
 				(parameters[0].get_parameter(parameter_type, data_type = "raw")[idx] - parameters[2].get_parameter(parameter_type, data_type = "raw")[idx]) / args.temperature * 1000
