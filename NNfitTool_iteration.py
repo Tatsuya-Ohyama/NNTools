@@ -251,11 +251,12 @@ if __name__ == '__main__':
 					flag_read = True
 					flag_init = True
 					continue
-				if len(line_val) == 0 or line_val[0] == "":
-					# read stop by empty row
-					break
 
 				if flag_read:
+					if len(line_val) == 0 or line_val[0] == "":
+						# read stop by empty row
+						break
+
 					if flag_init:
 						pos_sep = line_val.index("")
 						if pos_sep == 4:
