@@ -214,6 +214,7 @@ if __name__ == '__main__':
 	config_group.add_argument("-T", dest = "temperature", metavar = "TEMPERATURE", type = float, default = 310.15, help = "temperature for experimental data (Default: 310.15)")
 	config_group.add_argument("-m", dest = "mode", metavar = "EVALUATION_METHOD", default = "diff_square", choices = ["r", "r2", "diff_mean", "diff_std", "diff_sum", "diff_square"], help = "evaluation method (r, r2, diff_mean, diff_std, diff_sum, diff_square) (Default: diff_square)")
 	config_group.add_argument("-S", dest = "flag_separate", action = "store_true", default = False, help = "Separately calculate dS (Default: OFF (dS is calculated by Gibbs free energy equation))")
+	config_group.add_argument("-I", dest = "optimize_count", metavar = "LOOP_COUNT", type = int, default = 1, help = "the number of looping optimize (Default: 1)")
 	error_group = config_group.add_mutually_exclusive_group()
 	error_group.add_argument("-e", dest = "flag_error", action = "store_true", default = False, help = "consider with experimental value with error")
 	error_group.add_argument("-es", dest = "flag_error_strict", action = "store_true", default = False, help = "strictly consider with experimental value with error")
@@ -311,94 +312,110 @@ if __name__ == '__main__':
 					float(line_val[6]),
 					float(line_val[7])
 			)
-	sys.stderr.write("Loading experimental values ... done.\n")
+	sys.stderr.write("Loading experimental values.\n")
 
 	# optimize parameter
-	sys.stderr.write("Optimize parameters.\n")
-	if args.thread is not None:
-		# multi-thread
-		parameters_tmp = Parallel(n_jobs = args.thread)([
-			delayed(calculation_worker)(
-				parameters[exp_idx],
-				exp_datas[exp_idx],
-				args.mode,
-				args.initial_increment,
-				args.threshold_increment,
-				0
-			) for exp_idx in target_list])
-		if args.flag_separate:
-			parameters = parameters_tmp
-		else:
-			parameters[0] = parameters_tmp[0]
-			parameters[2] = parameters_tmp[1]
-
-	else:
-		# single-thread
-		for exp_idx in target_list:
-			parameters[exp_idx] = calculation_worker(
-				parameters[exp_idx],
-				exp_datas[exp_idx],
-				args.mode,
-				args.initial_increment,
-				args.threshold_increment,
-				args.verbose
-			)
-	sys.stderr.write("done.\n")
-
-	# optimize for parameter by experimental values with error
-	if args.flag_error:
-		sys.stderr.write("Optimize parameters with errors.\n")
-		negative = [1 for x in range(len(exp_datas[0].get_sequence()))]
-		positive = [-1 for x in range(len(exp_datas[0].get_sequence()))]
-		new_parameters = []
+	for loop_idx in range(args.optimize_count):
+		sys.stderr.write("Optimize parameters for {0} times.\n".format(loop_idx + 1))
 		if args.thread is not None:
 			# multi-thread
-			new_parameters = Parallel(n_jobs = args.thread)([
+			parameters_tmp = Parallel(n_jobs = args.thread)([
 				delayed(calculation_worker)(
 					parameters[exp_idx],
 					exp_datas[exp_idx],
 					args.mode,
 					args.initial_increment,
 					args.threshold_increment,
-					0,
-					sign
-				) for exp_idx in target_list
-					for sign in [negative, positive]
-			])
+					0
+				) for exp_idx in target_list])
+			if args.flag_separate:
+				parameters = parameters_tmp
+			else:
+				parameters[0] = parameters_tmp[0]
+				parameters[2] = parameters_tmp[1]
 
 		else:
 			# single-thread
 			for exp_idx in target_list:
-				# exp values with errors
-				for sign in [negative, positive]:
-					new_parameters.append(calculation_worker(
+				parameters[exp_idx] = calculation_worker(
+					parameters[exp_idx],
+					exp_datas[exp_idx],
+					args.mode,
+					args.initial_increment,
+					args.threshold_increment,
+					args.verbose
+				)
+
+		# optimize for parameter by experimental values with error
+		if args.flag_error:
+			sys.stderr.write("Optimize parameters with errors.\n")
+			negative = [1 for x in range(len(exp_datas[0].get_sequence()))]
+			positive = [-1 for x in range(len(exp_datas[0].get_sequence()))]
+			new_parameters = []
+			if args.thread is not None:
+				# multi-thread
+				new_parameters = Parallel(n_jobs = args.thread)([
+					delayed(calculation_worker)(
 						parameters[exp_idx],
 						exp_datas[exp_idx],
 						args.mode,
 						args.initial_increment,
 						args.threshold_increment,
-						args.verbose,
+						0,
 						sign
-					))
+					) for exp_idx in target_list
+						for sign in [negative, positive]
+				])
 
-		for idx, exp_idx in enumerate(target_list):
-			parameters[exp_idx].update_parameter_error("all", new_parameters[idx * 2 + 0].get_parameter())
-			parameters[exp_idx].update_parameter_error("all", new_parameters[idx * 2 + 1].get_parameter())
-		sys.stderr.write("done.\n")
+			else:
+				# single-thread
+				for exp_idx in target_list:
+					# exp values with errors
+					for sign in [negative, positive]:
+						new_parameters.append(calculation_worker(
+							parameters[exp_idx],
+							exp_datas[exp_idx],
+							args.mode,
+							args.initial_increment,
+							args.threshold_increment,
+							args.verbose,
+							sign
+						))
 
-	elif args.flag_error_strict:
-		sys.stderr.write("Optimize parameters with errors by strict mode.\n")
-		max_iter = len(list(itertools.product([-1, 1], repeat = len(exp_datas[0].get_sequence()))))
-		if args.thread is not None:
-			for exp_idx in target_list:
-				sys.stderr.write("Calculalte for {0} with error: {1} steps\n".format(exp_label[exp_idx], max_iter))
-				cnt = 0
-				calc_set = []
-				for job_idx, exp_error_pattern in enumerate(itertools.product([-1, 1], repeat = len(exp_datas[0].get_sequence()))):
-					calc_set.append(exp_error_pattern)
-					cnt += 1
-					if 50 <= cnt:
-						cnt = 0
+			for idx, exp_idx in enumerate(target_list):
+				parameters[exp_idx].update_parameter_error("all", new_parameters[idx * 2 + 0].get_parameter())
+				parameters[exp_idx].update_parameter_error("all", new_parameters[idx * 2 + 1].get_parameter())
+
+		elif args.flag_error_strict:
+			sys.stderr.write("Optimize parameters with errors by strict mode.\n")
+			max_iter = len(list(itertools.product([-1, 1], repeat = len(exp_datas[0].get_sequence()))))
+			if args.thread is not None:
+				for exp_idx in target_list:
+					sys.stderr.write("Calculalte for {0} with error: {1} steps\n".format(exp_label[exp_idx], max_iter))
+					cnt = 0
+					calc_set = []
+					for job_idx, exp_error_pattern in enumerate(itertools.product([-1, 1], repeat = len(exp_datas[0].get_sequence()))):
+						calc_set.append(exp_error_pattern)
+						cnt += 1
+						if 50 <= cnt:
+							cnt = 0
+							parameter_c = Parallel(n_jobs = args.thread)([
+								delayed(calculation_worker)(
+									parameters[exp_idx],
+									exp_datas[exp_idx],
+									args.mode,
+									args.initial_increment,
+									args.threshold_increment,
+									0,
+									exp_error_pattern
+								) for error_pattern in calc_set
+							])
+							for new_parameter in parameter_c:
+								parameters[exp_idx].update_parameter_error("all", new_parameter.get_parameter())
+							calc_set = []
+							sys.stderr.write("calculation of {0} with error for {1}-{2}.\n".format(exp_label[exp_idx], job_idx + 1 - 50, job_idx + 1))
+
+					if len(calc_set) != 0:
 						parameter_c = Parallel(n_jobs = args.thread)([
 							delayed(calculation_worker)(
 								parameters[exp_idx],
@@ -412,46 +429,35 @@ if __name__ == '__main__':
 						])
 						for new_parameter in parameter_c:
 							parameters[exp_idx].update_parameter_error("all", new_parameter.get_parameter())
-						calc_set = []
-						sys.stderr.write("calculation of {0} with error for {1}-{2} ... done.\n".format(exp_label[exp_idx], job_idx + 1 - 50, job_idx + 1))
 
-				if len(calc_set) != 0:
-					parameter_c = Parallel(n_jobs = args.thread)([
-						delayed(calculation_worker)(
+			else:
+				for exp_idx in target_list:
+					# exp values with error
+					for exp_error_pattern in itertools.product([-1, 1], repeat = len(exp_datas[0].get_sequence())):
+						new_parameter = calculation_worker(
 							parameters[exp_idx],
 							exp_datas[exp_idx],
 							args.mode,
 							args.initial_increment,
 							args.threshold_increment,
-							0,
+							args.verbose,
 							exp_error_pattern
-						) for error_pattern in calc_set
-					])
-					for new_parameter in parameter_c:
+						)
 						parameters[exp_idx].update_parameter_error("all", new_parameter.get_parameter())
 
-		else:
-			for exp_idx in target_list:
-				# exp values with error
-				for exp_error_pattern in itertools.product([-1, 1], repeat = len(exp_datas[0].get_sequence())):
-					new_parameter = calculation_worker(
-						parameters[exp_idx],
-						exp_datas[exp_idx],
-						args.mode,
-						args.initial_increment,
-						args.threshold_increment,
-						args.verbose,
-						exp_error_pattern
-					)
-					parameters[exp_idx].update_parameter_error("all", new_parameter.get_parameter())
-		sys.stderr.write("done.\n")
+		# for parameter in parameters:
+		# 	print("=" * 30)
+		# 	pprint(parameter.get_parameter())
+		# sys.stdin.readline()
+
 
 	# calculate dS
-	if args.flag_separate:
-		# convert unit type: TdS -> dS
-		for parameter_type, parameter_val in parameters[1].get_parameter().items():
-			parameters[1].set_parameter(parameter_type, [value / args.temperature * 1000 for value in parameter_val])
-	else:
+	# if args.flag_separate:
+	# 	# convert unit type: TdS -> dS
+	# 	for parameter_type, parameter_val in parameters[1].get_parameter().items():
+	# 		parameters[1].set_parameter(parameter_type, [value / args.temperature * 1000 for value in parameter_val])
+	# else:
+	if not args.flag_separate:
 		# calculate dS: (dH - dG) / T * 1000
 		dS = {
 			parameter_type: [
@@ -460,6 +466,7 @@ if __name__ == '__main__':
 			] for parameter_type in parameter_types}
 		for parameter_type in parameter_types:
 			parameters[1].set_parameter(parameter_type, dS[parameter_type])
+
 
 	# output
 	if args.flag_overwrite == False:
