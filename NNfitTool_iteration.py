@@ -445,18 +445,6 @@ if __name__ == '__main__':
 						)
 						parameters[exp_idx].update_parameter_error("all", new_parameter.get_parameter())
 
-		# for parameter in parameters:
-		# 	print("=" * 30)
-		# 	pprint(parameter.get_parameter())
-		# sys.stdin.readline()
-
-
-	# calculate dS
-	# if args.flag_separate:
-	# 	# convert unit type: TdS -> dS
-	# 	for parameter_type, parameter_val in parameters[1].get_parameter().items():
-	# 		parameters[1].set_parameter(parameter_type, [value / args.temperature * 1000 for value in parameter_val])
-	# else:
 	if not args.flag_separate:
 		# calculate dS: (dH - dG) / T * 1000
 		dS = {
