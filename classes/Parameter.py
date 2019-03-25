@@ -5,21 +5,6 @@ import sys
 import pickle
 import copy
 
-# =============== variables =============== #
-parameter_list = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "5term_TA"]
-complement_list = {
-	"AA/TT": "TT/AA",
-	"AT/TA": "AT/TA",
-	"TA/AT": "TA/AT",
-	"CA/GT": "TG/AC",
-	"GT/CA": "AC/TG",
-	"CT/GA": "AG/TC",
-	"GA/CT": "TC/AG",
-	"CG/GC": "CG/GC",
-	"GC/CG": "GC/CG",
-	"GG/CC": "CC/GG"
-}
-
 
 # =============== class =============== #
 class Parameter:
@@ -27,22 +12,7 @@ class Parameter:
 	def __init__(self):
 		# member variables
 		self._name = ""
-		self._parameters = {
-			"AA/TT":    [0.0, 0.0, 0.0],
-			"AT/TA":    [0.0, 0.0, 0.0],
-			"TA/AT":    [0.0, 0.0, 0.0],
-			"CA/GT":    [0.0, 0.0, 0.0],
-			"GT/CA":    [0.0, 0.0, 0.0],
-			"CT/GA":    [0.0, 0.0, 0.0],
-			"GA/CT":    [0.0, 0.0, 0.0],
-			"CG/GC":    [0.0, 0.0, 0.0],
-			"GC/CG":    [0.0, 0.0, 0.0],
-			"GG/CC":    [0.0, 0.0, 0.0],
-			"init_GC":  [0.0, 0.0, 0.0],
-			"init_AT":  [0.0, 0.0, 0.0],
-			"symmetry": [0.0, 0.0, 0.0],
-			"5term_TA": [0.0, 0.0, 0.0]
-		}
+		self._parameters = {}	# key: parameter_type, value: [raw, +error, -error]
 		self._change = {k: True for k in self._parameters.keys()}
 
 
@@ -81,11 +51,22 @@ class Parameter:
 		return self
 
 
+	def append_parameter(self, parameter_type, parameter_val):
+		"""
+		append parameter with error method
+		@param parameter_type: parameter name ("AA/TT", "AT/TA", ..., "init_XX", "symmetry", or "5term_TA")
+		@param parameter_val: parameter value list ([parameter, minimum parameter with error, maximum value with error] or parameter)
+		@return self: description
+		"""
+		self._parameters[parameter_type] = [parameter_val for x in range(3)]
+		return self
+
+
 	def set_parameter(self, parameter_type, parameter_val = None):
 		"""
 		set parameter with error method
 		@param parameter_type: parameter name (all, "AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", or "5term_TA")
-		@param parameter_val: parameter value ([parameter, +error, -error] or parameter)
+		@param parameter_val: parameter value ([parameter, minimum parameter with error, maximum value with error] or parameter)
 		@return self
 		"""
 		if parameter_type == "all":
@@ -93,11 +74,11 @@ class Parameter:
 			self._parameters = {x: [float(y[idx]) for idx in range(3)] if self._change[x] else self._parameters[x] for x, y in parameter_val.items()}
 			return self
 
-		if parameter_type not in parameter_list:
+		if parameter_type not in self._parameters.keys():
 			# parameter include by complementary sequence
-			parameter_type = [k for k, v in complement_list.items()][0]
+			parameter_type = "".join(reversed(parameter_type))
 
-		if parameter_type in parameter_list:
+		if parameter_type in self._parameters.keys():
 			# include parameter name
 			if self._change[parameter_type]:
 				if type(parameter_val) == list:
@@ -121,10 +102,10 @@ class Parameter:
 		parameter_types = []
 		parameter_values = []
 		if parameter_type == "all":
-			parameter_types = parameter_list
+			parameter_types = self._parameters.keys()
 			parameter_values = parameter_value
 		else:
-			if parameter_type not in parameter_list:
+			if parameter_type not in self._parameters.keys():
 				sys.stderr("ERROR: undefined parameter_type at set_parameter_error() in Parameter class ({0}).\n".format(parameter_type))
 				sys.exit(1)
 			parameter_types = [parameter_type]
@@ -206,7 +187,7 @@ class Parameter:
 		"""
 		return parameter
 		@param parameter_type: parameter type
-		@param data_type: raw ([value, error-, error+]) or fix (value, error+/-)
+		@param data_type: raw ([value, minimum value with error, maximum value with error]) or fix (value, error+/-)
 		@return parameter (list for None(all) or float value for each parameter)
 		"""
 		values = {}
@@ -219,15 +200,19 @@ class Parameter:
 			sys.stderr.write("ERROR: undefined data_type at get_parameter() in Parameter class.\n")
 			sys.exit(1)
 
-		if parameter_type in parameter_list:
+		if parameter_type is None:
+			return values
+		elif parameter_type in self._parameters.keys():
 			# exist parameter_type
 			return values[parameter_type]
-		elif parameter_type in complement_list.values():
-			parameter_key = [k for k, v in complement_list.items()][0]
-			return values[parameter_key]
 		else:
-			# all parameters are specified
-			return values
+			parameter_key = "".join(reversed(parameter_type))
+			if parameter_key in self._parameters.keys():
+				return values[parameter_key]
+			else:
+				# all parameters are specified
+				sys.stderr.write("ERROR: undefined parameter_type in get_parameter() in Parameter class.\n")
+				sys.exit(1)
 
 
 
