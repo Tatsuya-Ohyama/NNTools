@@ -6,25 +6,22 @@ import pickle
 
 from classes.Parameter import Parameter
 
-# =============== variable =============== #
-BASE_PAIR = {"A": "T", "T": "A", "G": "C", "C": "G"}
-parameter_list = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "5term_TA"]
-
 
 # =============== class =============== #
 class Sequence:
 	""" Sequence class """
-	def __init__(self, name, sequence = None):
+	def __init__(self, name):
 		# member variables
 		self._name = ""
 		self._sequence = ""
 		self._energy_type = ""
-		self._nucleic_type = "DNA"
 		self._is_self_complement = False
+		self._base_pair = {}
+		self._parameter_list = []
+
 
 		# initiation
 		self.set_name(name)
-		self.set_sequence(sequence)
 
 
 	def save_pickle(self, output_file):
@@ -62,6 +59,26 @@ class Sequence:
 		return self
 
 
+	def append_parameter(self, parameter):
+		"""
+		append parameter to parameter list
+		@param parameter: parameter name
+		@return self
+		"""
+		self._parameter_list.append(parameter)
+		return self
+
+
+	def set_parameter_type(self, parameter_list):
+		"""
+		set parameter list
+		@param parameter_list: list of parameters
+		@return self
+		"""
+		self._parameter_list = parameter_list
+		return self
+
+
 	def set_energy_type(self, energy_type):
 		"""
 		set energy_type
@@ -72,17 +89,16 @@ class Sequence:
 		return self
 
 
-	def set_sequence(self, sequence, nucleic_type = "DNA"):
+	def set_sequence(self, sequence, base_pairs):
 		"""
 		set sequence method
 		@param sequence: sequence
-		@param nucleic_type: DNA or RNA
+		@param base_pairs: dict for base pairs
 		@return: self
 		"""
 		if sequence is not None:
 			self._sequence = list(sequence)
-			self._nucleic_type = nucleic_type
-			complement = [BASE_PAIR[base] for base in self._sequence]
+			complement = [base_pairs[base] for base in self._sequence]
 			self._is_self_complement = self._sequence == list(reversed(complement))
 		return self
 
@@ -126,80 +142,89 @@ class Sequence:
 		return self._energy_type
 
 
-	def get_freq(self):
+	def get_freq(self, parameter_types, base_pair):
 		"""
 		return pair frequency
+		@param parameter_types: list for parameter types
+		@param base_pairs: dict for base pairs
 		@return pair frequency list
 		"""
-		freq = {
-			"AA/TT": 0,
-			"AT/TA": 0,
-			"TA/AT": 0,
-			"CA/GT": 0,
-			"GT/CA": 0,
-			"CT/GA": 0,
-			"GA/CT": 0,
-			"CG/GC": 0,
-			"GC/CG": 0,
-			"GG/CC": 0,
-			"init_GC": 0,
-			"init_AT": 0,
-			"symmetry": 0,
-			"5term_TA": 0
-		}
-		if self._sequence[0] in ["G", "C"]:
-			freq["init_GC"] += 1
-		elif self._sequence[0] in ["A", "T"]:
-			freq["init_AT"] += 1
-			if self._sequence[0] == "T":
-				freq["5term_TA"] += 1
+		freq = {param: 0 for param in parameter_types}
+
+		init_param = [param for param in parameter_types if "init" in param]
+		init_param_data = [param.replace("init", "").replace("_", "") for param in init_param]
+		for idx, param in enumerate(init_param_data):
+			if param == "":
+				# single initiation
+				freq[init_param[idx]] += 1
+			elif self._sequence[0] in list(param):
+				# multiple initiation
+				freq[init_param[idx]] += 1
+
+		end_param = [param for param in parameter_types if "end" in param]
+		end_param_data = [param.replace("end", "").replace("_", "") for param in end_param]
+		for idx, param in enumerate(end_param_data):
+			if param == "":
+				# single end
+				freq[end_param[idx]] += 1
+			elif self._sequence[-1] in list(param):
+				# multiple end
+				freq[end_param[idx]] += 1
 
 		if self._is_self_complement:
 			freq["symmetry"] += 1
 
 		for base_idx in range(len(self._sequence) - 1):
 			pair_forward = [self._sequence[base_idx], self._sequence[base_idx + 1]]
-			pair_reverse = [BASE_PAIR[self._sequence[base_idx]], BASE_PAIR[self._sequence[base_idx + 1]]]
+			pair_reverse = [base_pairs[self._sequence[base_idx]], base_pairs[self._sequence[base_idx + 1]]]
 			pair_type = "/".join(["".join(pair_forward), "".join(pair_reverse)])
-			if pair_type not in parameter_list:
+			if pair_type not in self._parameter_list:
 				pair_type = "/".join(["".join(reversed(pair_reverse)), "".join(reversed(pair_forward))])
 			freq[pair_type] += 1
 
 		return freq
 
 
-	def get_energy(self, obj_parameter):
+	def get_energy(self, obj_parameter, base_pairs):
 		"""
 		return energy value
+		@param base_pairs: dict for base pairs
 		@param obj_parameter: Parameter object
 		@return energy_value
 		"""
 		# calculate energy
 		energy = 0.0
-		if self._sequence[0] in ["G", "C"]:
-			# init_GC
-			energy += obj_parameter.get_parameter("init_GC")[0]
-		elif self._sequence[0] in ["A", "T"]:
-			# init_AT
-			energy += obj_parameter.get_parameter("init_AT")[0]
-			if self._sequence[0] == "T":
-				# 5term_TA
-				energy += obj_parameter.get_parameter("5term_TA")[0]
-		else:
-			sys.stderr.write("ERROR: undefined initiation base pair.\n")
-			sys.exit(1)
 
+		init_param = [param for param in obj_parameter.get_parameter().keys() if "init" in param]
+		init_param_data = [param.replace("init", "").replace("_", "") for param in init_param]
+		for idx, param in enumerate(init_param_data):
+			if param == "":
+				# single initiation
+				energy += obj_parameter.get_parameter(init_param[idx])[0]
+			elif self._sequence[0] in list(param):
+				# multiple initiation
+				energy += obj_parameter.get_parameter(init_param[idx])[0]
+
+		end_param = [param for param in obj_parameter.get_parameter().keys() if "end" in param]
+		end_param_data = [param.replace("end", "").replace("_", "") for param in end_param]
+		for idx, param in enumerate(end_param_data):
+			if param == "":
+				# single end
+				energy += obj_parameter.get_parameter(end_param[idx])[0]
+			elif self._sequence[-1] in list(param):
+				# multiple end
+				energy += obj_parameter.get_parameter(end_param[idx])[0]
 
 		for base_idx in range(len(self._sequence) - 1):
 			pair_forward = [self._sequence[base_idx], self._sequence[base_idx + 1]]
-			pair_reverse = [BASE_PAIR[self._sequence[base_idx]], BASE_PAIR[self._sequence[base_idx + 1]]]
+			pair_reverse = [base_pairs[self._sequence[base_idx]], base_pairs[self._sequence[base_idx + 1]]]
 			pair_type = "/".join(["".join(pair_forward), "".join(pair_reverse)])
-			if pair_type not in parameter_list:
+			if pair_type not in self._parameter_list:
 				pair_type = "/".join(["".join(reversed(pair_reverse)), "".join(reversed(pair_forward))])
 
 			energy += obj_parameter.get_parameter(pair_type)[0]
 
-		if self._is_self_complement:
+		if self._is_self_complement and "symmetry" in obj_parameter.get_parameter().keys():
 			energy += obj_parameter.get_parameter("symmetry")[0]
 
 		return energy

@@ -20,6 +20,7 @@ class DataGroup:
 		self._energy = []
 		self._error = []
 		self._error_sign = []
+		self._base_pairs = {}
 
 		# initiation
 		self.set_name(name)
@@ -57,6 +58,16 @@ class DataGroup:
 		@return self
 		"""
 		self._name = name
+		return self
+
+
+	def set_base_pair(self, base_pairs):
+		"""
+		set base pair information
+		@param base_pairs: dict for base pairs
+		@return self
+		"""
+		self._base_pairs = base_pairs
 		return self
 
 
@@ -109,7 +120,7 @@ class DataGroup:
 			data.append(self._energy[idx])
 			data.append(self._error[idx])
 			for parameter in obj_parameters:
-				data.append(self._sequences[idx].get_energy(parameter))
+				data.append(self._sequences[idx].get_energy(parameter, self._base_pairs))
 			energy_data.append(data)
 		return energy_data
 
@@ -125,7 +136,7 @@ class DataGroup:
 		if type(error_sign) != list:
 			error_sign = self._error_sign
 		x = np.array([self._energy[idx] + self._error[idx] * error_sign[idx] for idx in range(len(self._energy))])
-		y = np.array([sequence.get_energy(obj_parameter) for sequence in self._sequences])
+		y = np.array([sequence.get_energy(obj_parameter, self._base_pairs) for sequence in self._sequences])
 		result = [float(x) for x in np.polyfit(x, y, deg).tolist()]
 		if y[y == 0.0].shape[0] == len(self._sequences) or np.std(x) == 0.0 or np.std(y) == 0.0:
 			result.append(0.0)

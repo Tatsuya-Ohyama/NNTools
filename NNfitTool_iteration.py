@@ -24,8 +24,12 @@ from classes.DataGroup import DataGroup
 
 
 # =============== variable =============== #
-parameter_types = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "5term_TA"]
+DEFAULT_PARAMETER_TYPES = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "5term_TA"]
+DEFAULT_BASE_PAIRS = {"A": "T", "G": "C", "C": "G", "T": "A"}
 VERSION = "4.4 (#97)"
+parameter_types = DEFAULT_PARAMETER_TYPES
+base_pairs = DEFAULT_BASE_PAIRS
+iteration = 0
 
 
 # =============== function =============== #
@@ -133,7 +137,7 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 
 		if 2 <= verbose:
 			print("-" * 57)
-			print("{0} at {1} steps (dt = {2})  Mode: {3}".format(exp_label[exp_idx], cnt_i, increment, mode))
+			print("{0} at {1} steps (dt = {2}) of {3} times  Mode: {4}".format(exp_label[exp_idx], cnt_i, increment, iteration, mode))
 
 		# calculate diff statistic values between prev and present
 		# and choose largest one (The value that is largely close to the experimental value)
@@ -238,6 +242,8 @@ if __name__ == '__main__':
 
 	# loading reference parameter
 	if args.ref_param is not None:
+		base_pairs = {}
+		parameter_types = []
 		check_exist(args.ref_param, 2)
 
 		flag_read = False
@@ -271,9 +277,29 @@ if __name__ == '__main__':
 							sys.exit(1)
 						flag_init = False
 
-					parameters[0].set_parameter(line_val[0], float(line_val[pos_sep - pos_offset * 3]))
-					parameters[1].set_parameter(line_val[0], float(line_val[pos_sep - pos_offset * 2]))
-					parameters[2].set_parameter(line_val[0], float(line_val[pos_sep - pos_offset * 1]))
+					parameter_types.append(line_val[0])
+					if "/" in line_val[0]:
+						# lexical analysis for parameter label to base pair
+						bases = line_val[0].split("/")
+						for idx in range(len(bases)):
+							if bases[0][idx] not in base_pairs.keys():
+								# first registration for base[0][idx]
+								base_pairs[bases[0][idx]] = bases[1][idx]
+							elif base_pairs[bases[0][idx]] != bases[1][idx]:
+								# error with multiple base pair
+								sys.stderr.write("ERROR: multiple bases are registered as base pairs for a specific base. {0}-{1} and {0}-{2}\n".format(bases[0][idx], base_pairs[bases[0][idx]], bases[1][idx]))
+								sys.exit(1)
+							elif bases[1][idx] not in base_pairs.keys():
+								# first registration for base[1][idx]
+								base_pairs[bases[1][idx]] = bases[0][idx]
+							elif base_pairs[bases[1][idx]] != bases[0][idx]:
+								# error with multiple base pair
+								sys.stderr.write("ERROR: multiple bases are registered as base pairs for a specific base. {0}-{1} and {0}-{2}\n".format(bases[1][idx], base_pairs[bases[1][idx]], bases[0][idx]))
+								sys.exit(1)
+
+					parameters[0].append_parameter(line_val[0], float(line_val[pos_sep - pos_offset * 3]))
+					parameters[1].append_parameter(line_val[0], float(line_val[pos_sep - pos_offset * 2]))
+					parameters[2].append_parameter(line_val[0], float(line_val[pos_sep - pos_offset * 1]))
 					if len(line_val) == 8:
 						# format with error
 						line_val[5:8] = [True if x.capitalize() == "True" else False for x in line_val[5:8]]
@@ -285,9 +311,10 @@ if __name__ == '__main__':
 					parameters[2].set_change_stat(line_val[0], line_val[pos_sep + 3])
 	parameters_init = [copy.deepcopy(parameter) for parameter in parameters]
 
+
 	# reading sequence and experimental data
 	check_exist(args.experiment_file, 2)
-	exp_datas = [DataGroup(label) for label in exp_label]
+	exp_datas = [DataGroup(label).set_base_pair(base_pairs) for label in exp_label]
 	with open(args.experiment_file, "r") as obj_input:
 		reader = csv.reader(obj_input)
 
@@ -295,28 +322,31 @@ if __name__ == '__main__':
 		next(reader)
 
 		for line_val in reader:
+			line_val[2:] = [x if x != "" else "0.0" for x in line_val[2:]]
 			exp_datas[0].append(
-				Sequence(line_val[0], line_val[1]).set_energy_type(exp_label[0]),
+				Sequence(line_val[0]).set_sequence(line_val[1], base_pairs).set_parameter_type(parameter_types).set_energy_type(exp_label[0]),
 				float(line_val[2]),
 				float(line_val[3])
 			)
 			exp_datas[1].append(
-				Sequence(line_val[0], line_val[1]).set_energy_type(
+				Sequence(line_val[0]).set_sequence(line_val[1], base_pairs).set_parameter_type(parameter_types).set_energy_type(
 					exp_label[1]),
 					float(line_val[4]),
 					float(line_val[5])
 			)
 			exp_datas[2].append(
-				Sequence(line_val[0], line_val[1]).set_energy_type(
+				Sequence(line_val[0]).set_sequence(line_val[1], base_pairs).set_parameter_type(parameter_types).set_energy_type(
 					exp_label[2]),
 					float(line_val[6]),
 					float(line_val[7])
 			)
 	sys.stderr.write("Loading experimental values.\n")
 
+
 	# optimize parameter
 	for loop_idx in range(args.optimize_count):
 		sys.stderr.write("Optimize parameters for {0} times.\n".format(loop_idx + 1))
+		iteration = loop_idx + 1
 		if args.thread is not None:
 			# multi-thread
 			parameters_tmp = Parallel(n_jobs = args.thread)([
@@ -456,99 +486,99 @@ if __name__ == '__main__':
 			parameters[1].set_parameter(parameter_type, dS[parameter_type])
 
 
-	# output
-	if args.flag_overwrite == False:
-		check_overwrite(args.output_file)
+	# # output
+	# if args.flag_overwrite == False:
+	# 	check_overwrite(args.output_file)
 
-	with open(args.output_file, "w") as obj_output:
-		writer = csv.writer(obj_output)
-		writer.writerow(["<< Input >>"])
-		writer.writerow(["Program version", VERSION])
-		writer.writerow(["Experimental data", args.experiment_file])
-		writer.writerow(["Initial iteration", args.initial_increment])
-		writer.writerow(["Increment threshold", args.threshold_increment])
-		writer.writerow(["Temperature", args.temperature])
-		writer.writerow(["Separate calculation", args.flag_separate])
-		writer.writerow(["Evaluation mode", args.mode])
-		writer.writerow(["Reference parameter", args.ref_param])
-		writer.writerow([""])
+	# with open(args.output_file, "w") as obj_output:
+	# 	writer = csv.writer(obj_output)
+	# 	writer.writerow(["<< Input >>"])
+	# 	writer.writerow(["Program version", VERSION])
+	# 	writer.writerow(["Experimental data", args.experiment_file])
+	# 	writer.writerow(["Initial iteration", args.initial_increment])
+	# 	writer.writerow(["Increment threshold", args.threshold_increment])
+	# 	writer.writerow(["Temperature", args.temperature])
+	# 	writer.writerow(["Separate calculation", args.flag_separate])
+	# 	writer.writerow(["Evaluation mode", args.mode])
+	# 	writer.writerow(["Reference parameter", args.ref_param])
+	# 	writer.writerow([""])
 
-		writer.writerow(["Initial parameter", "dH", "dS", "dG", "", "Change (dH)", "Change (dS)", "Change (dG)"])
-		for parameter_type in parameter_types:
-			parameter_dH = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters_init[0].get_parameter(data_type = "fix")[parameter_type]]
-			parameter_dS = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters_init[1].get_parameter(data_type = "fix")[parameter_type]]
-			parameter_dG = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters_init[2].get_parameter(data_type = "fix")[parameter_type]]
+	# 	writer.writerow(["Initial parameter", "dH", "dS", "dG", "", "Change (dH)", "Change (dS)", "Change (dG)"])
+	# 	for parameter_type in parameter_types:
+	# 		parameter_dH = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters_init[0].get_parameter(data_type = "fix")[parameter_type]]
+	# 		parameter_dS = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters_init[1].get_parameter(data_type = "fix")[parameter_type]]
+	# 		parameter_dG = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters_init[2].get_parameter(data_type = "fix")[parameter_type]]
 
-			writer.writerow([
-				parameter_type,
-				parameter_dH[0],
-				parameter_dS[0],
-				parameter_dG[0],
-				"",
-				parameters_init[0].is_change(parameter_type),
-				parameters_init[1].is_change(parameter_type),
-				parameters_init[2].is_change(parameter_type)
-				])
-		writer.writerow([""])
-		writer.writerow([""])
+	# 		writer.writerow([
+	# 			parameter_type,
+	# 			parameter_dH[0],
+	# 			parameter_dS[0],
+	# 			parameter_dG[0],
+	# 			"",
+	# 			parameters_init[0].is_change(parameter_type),
+	# 			parameters_init[1].is_change(parameter_type),
+	# 			parameters_init[2].is_change(parameter_type)
+	# 			])
+	# 	writer.writerow([""])
+	# 	writer.writerow([""])
 
-		writer.writerow(["<< Results >>"])
-		writer.writerow(["Parameter (optimized)", "dH", "dH (error)", "dS", "dS (error)", "dG", "dG (error)", "", "Change (dH)", "Change (dS)", "Change (dG)"])
-		for parameter_type in parameter_types:
-			parameter_dH = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters[0].get_parameter(data_type = "fix")[parameter_type]]
-			parameter_dS = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters[1].get_parameter(data_type = "fix")[parameter_type]]
-			parameter_dG = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters[2].get_parameter(data_type = "fix")[parameter_type]]
+	# 	writer.writerow(["<< Results >>"])
+	# 	writer.writerow(["Parameter (optimized)", "dH", "dH (error)", "dS", "dS (error)", "dG", "dG (error)", "", "Change (dH)", "Change (dS)", "Change (dG)"])
+	# 	for parameter_type in parameter_types:
+	# 		parameter_dH = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters[0].get_parameter(data_type = "fix")[parameter_type]]
+	# 		parameter_dS = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters[1].get_parameter(data_type = "fix")[parameter_type]]
+	# 		parameter_dG = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters[2].get_parameter(data_type = "fix")[parameter_type]]
 
-			writer.writerow([
-				parameter_type,
-				parameter_dH[0], parameter_dH[1],
-				parameter_dS[0], parameter_dS[1],
-				parameter_dG[0], parameter_dG[1],
-				"",
-				parameters[0].is_change(parameter_type),
-				parameters[1].is_change(parameter_type),
-				parameters[2].is_change(parameter_type)
-				])
-		writer.writerow([""])
-		writer.writerow([""])
+	# 		writer.writerow([
+	# 			parameter_type,
+	# 			parameter_dH[0], parameter_dH[1],
+	# 			parameter_dS[0], parameter_dS[1],
+	# 			parameter_dG[0], parameter_dG[1],
+	# 			"",
+	# 			parameters[0].is_change(parameter_type),
+	# 			parameters[1].is_change(parameter_type),
+	# 			parameters[2].is_change(parameter_type)
+	# 			])
+	# 	writer.writerow([""])
+	# 	writer.writerow([""])
 
-		writer.writerow(["<< Sequence >>"])
-		writer.writerow([
-			"Name",
-			"Sequence",
-			"Exp. (dH)",
-			"Exp. (dS)",
-			"Exp. (dG)",
-			"Predict (dH)",
-			"Predict (dS)",
-			"Predict (dG)",
-			"Diff. (dH)",
-			"Diff. (dS)",
-			"Diff. (dG)",
-			""
-			] + parameter_types)
+	# 	writer.writerow(["<< Sequence >>"])
+	# 	writer.writerow([
+	# 		"Name",
+	# 		"Sequence",
+	# 		"Exp. (dH)",
+	# 		"Exp. (dS)",
+	# 		"Exp. (dG)",
+	# 		"Predict (dH)",
+	# 		"Predict (dS)",
+	# 		"Predict (dG)",
+	# 		"Diff. (dH)",
+	# 		"Diff. (dS)",
+	# 		"Diff. (dG)",
+	# 		""
+	# 		] + parameter_types)
 
-		for sequence, dH, dS, dG in zip(exp_datas[0].get_sequence(), exp_datas[0].get_energy(flag_sequence = True, obj_parameters = [parameters[0]]), exp_datas[1].get_energy(flag_sequence = True, obj_parameters = [parameters[1]]), exp_datas[2].get_energy(flag_sequence = True, obj_parameters = [parameters[2]])):
-			name = sequence.get_name()
-			seq = sequence.get_sequence("string")
-			exp_dH = dH[1]
-			exp_dS = dS[1]
-			exp_dG = dG[1]
-			pred_dH = dH[3]
-			pred_dS = dS[3]
-			pred_dG = dG[3]
-			diff_dH = pred_dH - exp_dH
-			diff_dS = pred_dS - exp_dS
-			diff_dG = pred_dG - exp_dG
-			freq = [sequence.get_freq()[parameter_type] for parameter_type in parameter_types]
-			writer.writerow([name, seq, exp_dH, exp_dS, exp_dG, pred_dH, pred_dS, pred_dG, diff_dH, diff_dS, diff_dG] + [""] + freq)
-		writer.writerow([""])
+	# 	for sequence, dH, dS, dG in zip(exp_datas[0].get_sequence(), exp_datas[0].get_energy(flag_sequence = True, obj_parameters = [parameters[0]]), exp_datas[1].get_energy(flag_sequence = True, obj_parameters = [parameters[1]]), exp_datas[2].get_energy(flag_sequence = True, obj_parameters = [parameters[2]])):
+	# 		name = sequence.get_name()
+	# 		seq = sequence.get_sequence("string")
+	# 		exp_dH = dH[1]
+	# 		exp_dS = dS[1]
+	# 		exp_dG = dG[1]
+	# 		pred_dH = dH[3]
+	# 		pred_dS = dS[3]
+	# 		pred_dG = dG[3]
+	# 		diff_dH = pred_dH - exp_dH
+	# 		diff_dS = pred_dS - exp_dS
+	# 		diff_dG = pred_dG - exp_dG
+	# 		freq = [sequence.get_freq()[parameter_type] for parameter_type in parameter_types]
+	# 		writer.writerow([name, seq, exp_dH, exp_dS, exp_dG, pred_dH, pred_dS, pred_dG, diff_dH, diff_dS, diff_dG] + [""] + freq)
+	# 	writer.writerow([""])
 
-		writer.writerow(["Correlation: exp. vs predict", "", "dH", "dS", "dG"])
-		writer.writerow(["", "(Stat: R)"] + [exp_datas[idx].get_stat(parameters[idx], "r") for idx in range(3)])
-		writer.writerow(["", "(Stat: R2)"] + [exp_datas[idx].get_stat(parameters[idx], "r2") for idx in range(3)])
-		writer.writerow(["", "(Stat: Slope)"] + [exp_datas[idx].get_stat(parameters[idx], "slope") for idx in range(3)])
-		writer.writerow(["", "(Stat: Intercept)"] + [exp_datas[idx].get_stat(parameters[idx], "intercept") for idx in range(3)])
-		writer.writerow(["", "(Stat: Diff Mean)"] + [exp_datas[idx].get_stat(parameters[idx], "diff_mean") for idx in range(3)])
-		writer.writerow(["", "(Stat: Diff Sum)"] + [exp_datas[idx].get_stat(parameters[idx], "diff_sum") for idx in range(3)])
-		writer.writerow(["", "(Stat: Diff Sq)"] + [exp_datas[idx].get_stat(parameters[idx], "diff_square") for idx in range(3)])
+	# 	writer.writerow(["Correlation: exp. vs predict", "", "dH", "dS", "dG"])
+	# 	writer.writerow(["", "(Stat: R)"] + [exp_datas[idx].get_stat(parameters[idx], "r") for idx in range(3)])
+	# 	writer.writerow(["", "(Stat: R2)"] + [exp_datas[idx].get_stat(parameters[idx], "r2") for idx in range(3)])
+	# 	writer.writerow(["", "(Stat: Slope)"] + [exp_datas[idx].get_stat(parameters[idx], "slope") for idx in range(3)])
+	# 	writer.writerow(["", "(Stat: Intercept)"] + [exp_datas[idx].get_stat(parameters[idx], "intercept") for idx in range(3)])
+	# 	writer.writerow(["", "(Stat: Diff Mean)"] + [exp_datas[idx].get_stat(parameters[idx], "diff_mean") for idx in range(3)])
+	# 	writer.writerow(["", "(Stat: Diff Sum)"] + [exp_datas[idx].get_stat(parameters[idx], "diff_sum") for idx in range(3)])
+	# 	writer.writerow(["", "(Stat: Diff Sq)"] + [exp_datas[idx].get_stat(parameters[idx], "diff_square") for idx in range(3)])
