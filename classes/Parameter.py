@@ -13,7 +13,7 @@ class Parameter:
 		# member variables
 		self._name = ""
 		self._parameters = {}	# key: parameter_type, value: [raw, +error, -error]
-		self._change = {k: True for k in self._parameters.keys()}
+		self._change = {}
 
 
 	def save_pickle(self, output_file):
@@ -59,6 +59,7 @@ class Parameter:
 		@return self: description
 		"""
 		self._parameters[parameter_type] = [parameter_val for x in range(3)]
+		self._change[parameter_type] = True
 		return self
 
 

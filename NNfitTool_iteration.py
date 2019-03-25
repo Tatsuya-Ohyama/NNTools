@@ -309,6 +309,12 @@ if __name__ == '__main__':
 					parameters[0].set_change_stat(line_val[0], line_val[pos_sep + 1])
 					parameters[1].set_change_stat(line_val[0], line_val[pos_sep + 2])
 					parameters[2].set_change_stat(line_val[0], line_val[pos_sep + 3])
+	else:
+		# define starting parameter by defualt value
+		for parameter in parameters:
+			for parameter_type in parameter_types:
+				parameter.append_parameter(parameter_type, 0.0)
+
 	parameters_init = [copy.deepcopy(parameter) for parameter in parameters]
 
 
