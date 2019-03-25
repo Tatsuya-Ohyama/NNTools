@@ -26,7 +26,7 @@ from classes.DataGroup import DataGroup
 # =============== variable =============== #
 DEFAULT_PARAMETER_TYPES = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "5term_TA"]
 DEFAULT_BASE_PAIRS = {"A": "T", "G": "C", "C": "G", "T": "A"}
-VERSION = "5.0rc1 (#105)"
+VERSION = "5.0 (#107)"
 parameter_types = DEFAULT_PARAMETER_TYPES
 base_pairs = DEFAULT_BASE_PAIRS
 iteration = 0
@@ -224,7 +224,7 @@ if __name__ == '__main__':
 	error_group.add_argument("-es", dest = "flag_error_strict", action = "store_true", default = False, help = "strictly consider with experimental value with error")
 
 	misc_group = parser.add_argument_group("Misc")
-	misc_group.add_argument("-t", dest = "thread", metavar = "THREAD", type = int, help = "number of threads for parallel calculation (Default: None)")
+	misc_group.add_argument("-t", dest = "thread", metavar = "THREAD", type = int, default = 1, help = "number of threads for parallel calculation (Default: 1)")
 	misc_group.add_argument("--verbose", "-v", dest = "verbose", action = "count", default = 0, help = "verbose (-v: display results / -vv: display calculation results)")
 	args = parser.parse_args()
 
@@ -353,7 +353,7 @@ if __name__ == '__main__':
 	for loop_idx in range(args.optimize_count):
 		sys.stderr.write("Optimize parameters for {0} times.\n".format(loop_idx + 1))
 		iteration = loop_idx + 1
-		if args.thread is not None:
+		if 1 < args.thread:
 			# multi-thread
 			parameters_tmp = Parallel(n_jobs = args.thread)([
 				delayed(calculation_worker)(
