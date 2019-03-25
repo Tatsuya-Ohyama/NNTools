@@ -142,7 +142,7 @@ class Sequence:
 		return self._energy_type
 
 
-	def get_freq(self, parameter_types, base_pair):
+	def get_freq(self, parameter_types, base_pairs):
 		"""
 		return pair frequency
 		@param parameter_types: list for parameter types
