@@ -285,17 +285,9 @@ if __name__ == '__main__':
 							if bases[0][idx] not in base_pairs.keys():
 								# first registration for base[0][idx]
 								base_pairs[bases[0][idx]] = bases[1][idx]
-							elif base_pairs[bases[0][idx]] != bases[1][idx]:
-								# error with multiple base pair
-								sys.stderr.write("ERROR: multiple bases are registered as base pairs for a specific base. {0}-{1} and {0}-{2}\n".format(bases[0][idx], base_pairs[bases[0][idx]], bases[1][idx]))
-								sys.exit(1)
 							elif bases[1][idx] not in base_pairs.keys():
 								# first registration for base[1][idx]
 								base_pairs[bases[1][idx]] = bases[0][idx]
-							elif base_pairs[bases[1][idx]] != bases[0][idx]:
-								# error with multiple base pair
-								sys.stderr.write("ERROR: multiple bases are registered as base pairs for a specific base. {0}-{1} and {0}-{2}\n".format(bases[1][idx], base_pairs[bases[1][idx]], bases[0][idx]))
-								sys.exit(1)
 
 					parameters[0].append_parameter(line_val[0], float(line_val[pos_sep - pos_offset * 3]))
 					parameters[1].append_parameter(line_val[0], float(line_val[pos_sep - pos_offset * 2]))

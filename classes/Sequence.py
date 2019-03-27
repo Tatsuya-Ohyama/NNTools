@@ -98,6 +98,12 @@ class Sequence:
 		"""
 		if sequence is not None:
 			self._sequence = list(sequence)
+
+			misstype = [base for base in self._sequence if base not in base_pairs.keys()]
+			if len(misstype) != 0:
+				sys.stderr.write("ERROR: misstype of base: {0}.\n".format(misstype))
+				sys.exit(1)
+
 			complement = [base_pairs[base] for base in self._sequence]
 			self._is_self_complement = self._sequence == list(reversed(complement))
 		return self
