@@ -14,9 +14,9 @@ class Sequence:
 		# member variables
 		self._name = ""
 		self._sequence = ""
+		self._complement = ""
 		self._energy_type = ""
 		self._is_self_complement = False
-		self._base_pair = {}
 		self._parameter_list = []
 
 
@@ -104,8 +104,8 @@ class Sequence:
 				sys.stderr.write("ERROR: misstype of base: {0}.\n".format(misstype))
 				sys.exit(1)
 
-			complement = [base_pairs[base] for base in self._sequence]
-			self._is_self_complement = self._sequence == list(reversed(complement))
+			self._complement = [base_pairs[base] for base in self._sequence]
+			self._is_self_complement = self._sequence == list(reversed(self._complement))
 		return self
 
 
@@ -157,8 +157,8 @@ class Sequence:
 		"""
 		freq = {param: 0 for param in parameter_types}
 
-		init_param = [param for param in parameter_types if "init" in param]
-		init_param_data = [param.replace("init", "").replace("_", "") for param in init_param]
+		init_param_name = [param for param in parameter_types if "init" in param]
+		init_param_data = [param.replace("init", "").replace("_", "") for param in init_param_name]
 		for idx, param in enumerate(init_param_data):
 			if param == "":
 				# single initiation
