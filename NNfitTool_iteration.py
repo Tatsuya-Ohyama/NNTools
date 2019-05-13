@@ -24,7 +24,7 @@ from classes.DataGroup import DataGroup
 
 
 # =============== variable =============== #
-DEFAULT_PARAMETER_TYPES = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "5term_TA"]
+DEFAULT_PARAMETER_TYPES = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "re:^T/^A"]
 DEFAULT_BASE_PAIRS = {"A": "T", "G": "C", "C": "G", "T": "A"}
 VERSION = "6.0"
 parameter_types = DEFAULT_PARAMETER_TYPES
@@ -322,23 +322,10 @@ if __name__ == '__main__':
 
 		for line_val in reader:
 			line_val[2:] = [x if x != "" else "0.0" for x in line_val[2:]]
-			exp_datas[0].append(
-				Sequence(line_val[0]).set_sequence(line_val[1], base_pairs).set_parameter_type(parameter_types).set_energy_type(exp_label[0]),
-				float(line_val[2]),
-				float(line_val[3])
-			)
-			exp_datas[1].append(
-				Sequence(line_val[0]).set_sequence(line_val[1], base_pairs).set_parameter_type(parameter_types).set_energy_type(
-					exp_label[1]),
-					float(line_val[4]),
-					float(line_val[5])
-			)
-			exp_datas[2].append(
-				Sequence(line_val[0]).set_sequence(line_val[1], base_pairs).set_parameter_type(parameter_types).set_energy_type(
-					exp_label[2]),
-					float(line_val[6]),
-					float(line_val[7])
-			)
+			obj_sequence = Sequence(line_val[0]).set_sequence(line_val[1], base_pairs).set_parameter_type(parameter_types)
+			exp_datas[0].append(obj_sequence, float(line_val[2]), float(line_val[3]))
+			exp_datas[1].append(obj_sequence, float(line_val[4]), float(line_val[5]))
+			exp_datas[2].append(obj_sequence, float(line_val[6]), float(line_val[7]))
 	sys.stderr.write("Loading experimental values.\n")
 
 
