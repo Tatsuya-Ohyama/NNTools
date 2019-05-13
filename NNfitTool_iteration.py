@@ -26,7 +26,7 @@ from classes.DataGroup import DataGroup
 # =============== variable =============== #
 DEFAULT_PARAMETER_TYPES = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "5term_TA"]
 DEFAULT_BASE_PAIRS = {"A": "T", "G": "C", "C": "G", "T": "A"}
-VERSION = "5.3 (#107)"
+VERSION = "5.3"
 parameter_types = DEFAULT_PARAMETER_TYPES
 base_pairs = DEFAULT_BASE_PAIRS
 iteration = 0
@@ -570,8 +570,8 @@ if __name__ == '__main__':
 			diff_dH = pred_dH - exp_dH
 			diff_dS = pred_dS - exp_dS
 			diff_dG = pred_dG - exp_dG
-			freq = [sequence.get_freq(parameter_types, base_pairs)[parameter_type] for parameter_type in parameter_types]
-			writer.writerow([name, seq, exp_dH, exp_dS, exp_dG, pred_dH, pred_dS, pred_dG, diff_dH, diff_dS, diff_dG] + [""] + freq)
+			freq = sequence.get_freq(parameter_types, base_pairs)
+			writer.writerow([name, seq, exp_dH, exp_dS, exp_dG, pred_dH, pred_dS, pred_dG, diff_dH, diff_dS, diff_dG] + [""] + [freq[parameter_type] for parameter_type in parameter_types])
 		writer.writerow([""])
 
 		writer.writerow(["Correlation: exp. vs predict", "", "dH", "dS", "dG"])

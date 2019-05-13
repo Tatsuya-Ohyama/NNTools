@@ -33,7 +33,6 @@ class Parameter:
 		restore from pickle
 		@param input_file: pickle file path
 		@return self (for chain method)
-		@return self (for chain method)
 		"""
 		with open(input_file, "rb") as obj_input:
 			self = pickle.load(obj_input)
@@ -56,7 +55,7 @@ class Parameter:
 		append parameter with error method
 		@param parameter_type: parameter name ("AA/TT", "AT/TA", ..., "init_XX", "symmetry", or "5term_TA")
 		@param parameter_val: parameter value list ([parameter, minimum parameter with error, maximum value with error] or parameter)
-		@return self: description
+		@return self
 		"""
 		self._parameters[parameter_type] = [parameter_val for x in range(3)]
 		self._change[parameter_type] = True

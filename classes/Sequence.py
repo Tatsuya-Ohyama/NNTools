@@ -177,8 +177,11 @@ class Sequence:
 				# multiple end
 				freq[end_param[idx]] += 1
 
-		if self._is_self_complement and "symmetry" in freq.keys():
+		if "symmetry" in freq.keys() and self._is_self_complement:
 			freq["symmetry"] += 1
+
+		if "length" in freq.keys():
+			freq["length"] = len(self._sequence)
 
 		for base_idx in range(len(self._sequence) - 1):
 			pair_forward = [self._sequence[base_idx], self._sequence[base_idx + 1]]
@@ -232,6 +235,9 @@ class Sequence:
 
 		if self._is_self_complement and "symmetry" in obj_parameter.get_parameter().keys():
 			energy += obj_parameter.get_parameter("symmetry")[0]
+
+		if "length" in obj_parameter.get_parameter().keys():
+			energy += obj_parameter.get_parameter("length")[0] * len(self._sequence)
 
 		return energy
 
