@@ -177,7 +177,7 @@ class Sequence:
 				# multiple end
 				freq[end_param[idx]] += 1
 
-		if self._is_self_complement:
+		if self._is_self_complement and "symmetry" in freq.keys():
 			freq["symmetry"] += 1
 
 		for base_idx in range(len(self._sequence) - 1):
