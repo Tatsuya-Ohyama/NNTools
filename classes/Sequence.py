@@ -3,6 +3,7 @@
 
 import sys
 import pickle
+import re
 
 from classes.Parameter import Parameter
 
@@ -15,7 +16,6 @@ class Sequence:
 		self._name = ""
 		self._sequence = ""
 		self._complement = ""
-		self._energy_type = ""
 		self._is_self_complement = False
 		self._parameter_list = []
 
@@ -83,16 +83,6 @@ class Sequence:
 		return self
 
 
-	def set_energy_type(self, energy_type):
-		"""
-		set energy_type
-		@param energy_type: dH, dS, dG
-		@return self
-		"""
-		self._energy_type = energy_type
-		return self
-
-
 	def set_sequence(self, sequence, base_pairs):
 		"""
 		set sequence method
@@ -144,14 +134,6 @@ class Sequence:
 		return self._is_self_complement
 
 
-	def get_energy_type(self):
-		"""
-		return energy_type
-		@return energy_type
-		"""
-		return self._energy_type
-
-
 	def get_freq(self, parameter_types, base_pairs, flag_cache = True):
 		"""
 		return pair frequency
@@ -161,45 +143,54 @@ class Sequence:
 		@return pair frequency list
 		"""
 		if flag_cache and parameter_types == self._cache_parameter_types and base_pairs == self._cache_base_pairs:
+			# flag_cache is True and condition is the same => use cache
 			return self._cache_freq
 
 		else:
+			# build or rebuild parameter list
 			self._cache_parameter_types = parameter_types
 			self._cache_base_pairs = base_pairs
 			self._cache_freq = {param: 0 for param in parameter_types}
 
-			init_param_name = [param for param in parameter_types if "init" in param]
-			init_param_data = [param.replace("init", "").replace("_", "") for param in init_param_name]
-			for idx, param in enumerate(init_param_data):
-				if param == "":
-					# single initiation
-					self._cache_freq[init_param_name[idx]] += 1
-				elif self._sequence[0] in list(param):
-					# multiple initiation
-					self._cache_freq[init_param_name[idx]] += 1
+			for param in parameter_types:
+				# special penalty
+				if "/" in param:
+					continue
+				elif param.startswith("init"):
+					# initiation parameter
+					list_init = [self._sequence[0] + self._complement[0], self._sequence[0] + self._complement[0]]
+					if param.replace("init_", "") in list_init:
+						self._cache_freq[param] += 1
 
-			end_param = [param for param in parameter_types if "end" in param]
-			end_param_data = [param.replace("end", "").replace("_", "") for param in end_param]
-			for idx, param in enumerate(end_param_data):
-				if param == "":
-					# single end
-					self._cache_freq[end_param[idx]] += 1
-				elif self._sequence[-1] in list(param):
-					# multiple end
-					self._cache_freq[end_param[idx]] += 1
+				elif param.startswith("length"):
+					# length parameter
+					self._cache_freq[param] = len(self._sequence)
 
-			if "symmetry" in self._cache_freq.keys() and self._is_self_complement:
-				self._cache_freq["symmetry"] += 1
+				elif param.startswith("symmetry"):
+					# symmetry parameter
+					if self._is_self_complement:
+						self._cache_freq[param] += 1
 
-			if "length" in self._cache_freq.keys():
-				self._cache_freq["length"] = len(self._sequence)
+				elif param.startswith("re:"):
+					# regexp parameter
+					re_exps = param.replace("re:", "").split("/")
+					flag_match = 0
+					for regexp, sequence in zip(re_exps, ["".join(self._sequence), "".join(self._complement)]):
+						if re.search(regexp, sequence):
+							flag_match += 1
+					if flag_match == 2:
+						# match sequence and complementary sequence
+						self._cache_freq[param] += 1
+
+				else:
+					sys.stderr.write("ERROR: undefined parameter at get_freq() in Sequence class ({0}).\n".format(param))
+					sys.exit(1)
 
 			for base_idx in range(len(self._sequence) - 1):
-				pair_forward = [self._sequence[base_idx], self._sequence[base_idx + 1]]
-				pair_reverse = [base_pairs[self._sequence[base_idx]], base_pairs[self._sequence[base_idx + 1]]]
-				pair_type = "/".join(["".join(pair_forward), "".join(pair_reverse)])
+				# regular base pair parameter
+				pair_type = "/".join(["".join(self._sequence[base_idx : base_idx + 2]), "".join(self._complement[base_idx : base_idx + 2])])
 				if pair_type not in self._parameter_list:
-					pair_type = "/".join(["".join(reversed(pair_reverse)), "".join(reversed(pair_forward))])
+					pair_type = "/".join(["".join(reversed(self._complement[base_idx : base_idx + 2])), "".join(reversed(self._sequence[base_idx : base_idx + 2]))])
 				self._cache_freq[pair_type] += 1
 
 			return self._cache_freq
