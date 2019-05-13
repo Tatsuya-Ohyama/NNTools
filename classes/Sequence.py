@@ -19,6 +19,10 @@ class Sequence:
 		self._is_self_complement = False
 		self._parameter_list = []
 
+		self._cache_parameter_types = []
+		self._cache_base_pairs = {}
+		self._cache_freq = {}
+
 
 		# initiation
 		self.set_name(name)
@@ -148,50 +152,57 @@ class Sequence:
 		return self._energy_type
 
 
-	def get_freq(self, parameter_types, base_pairs):
+	def get_freq(self, parameter_types, base_pairs, flag_cache = True):
 		"""
 		return pair frequency
 		@param parameter_types: list for parameter types
 		@param base_pairs: dict for base pairs
+		@param flag_cache: use cache data (Default: True)
 		@return pair frequency list
 		"""
-		freq = {param: 0 for param in parameter_types}
+		if flag_cache and parameter_types == self._cache_parameter_types and base_pairs == self._cache_base_pairs:
+			return self._cache_freq
 
-		init_param_name = [param for param in parameter_types if "init" in param]
-		init_param_data = [param.replace("init", "").replace("_", "") for param in init_param_name]
-		for idx, param in enumerate(init_param_data):
-			if param == "":
-				# single initiation
-				freq[init_param_name[idx]] += 1
-			elif self._sequence[0] in list(param):
-				# multiple initiation
-				freq[init_param_name[idx]] += 1
+		else:
+			self._cache_parameter_types = parameter_types
+			self._cache_base_pairs = base_pairs
+			self._cache_freq = {param: 0 for param in parameter_types}
 
-		end_param = [param for param in parameter_types if "end" in param]
-		end_param_data = [param.replace("end", "").replace("_", "") for param in end_param]
-		for idx, param in enumerate(end_param_data):
-			if param == "":
-				# single end
-				freq[end_param[idx]] += 1
-			elif self._sequence[-1] in list(param):
-				# multiple end
-				freq[end_param[idx]] += 1
+			init_param_name = [param for param in parameter_types if "init" in param]
+			init_param_data = [param.replace("init", "").replace("_", "") for param in init_param_name]
+			for idx, param in enumerate(init_param_data):
+				if param == "":
+					# single initiation
+					self._cache_freq[init_param_name[idx]] += 1
+				elif self._sequence[0] in list(param):
+					# multiple initiation
+					self._cache_freq[init_param_name[idx]] += 1
 
-		if "symmetry" in freq.keys() and self._is_self_complement:
-			freq["symmetry"] += 1
+			end_param = [param for param in parameter_types if "end" in param]
+			end_param_data = [param.replace("end", "").replace("_", "") for param in end_param]
+			for idx, param in enumerate(end_param_data):
+				if param == "":
+					# single end
+					self._cache_freq[end_param[idx]] += 1
+				elif self._sequence[-1] in list(param):
+					# multiple end
+					self._cache_freq[end_param[idx]] += 1
 
-		if "length" in freq.keys():
-			freq["length"] = len(self._sequence)
+			if "symmetry" in self._cache_freq.keys() and self._is_self_complement:
+				self._cache_freq["symmetry"] += 1
 
-		for base_idx in range(len(self._sequence) - 1):
-			pair_forward = [self._sequence[base_idx], self._sequence[base_idx + 1]]
-			pair_reverse = [base_pairs[self._sequence[base_idx]], base_pairs[self._sequence[base_idx + 1]]]
-			pair_type = "/".join(["".join(pair_forward), "".join(pair_reverse)])
-			if pair_type not in self._parameter_list:
-				pair_type = "/".join(["".join(reversed(pair_reverse)), "".join(reversed(pair_forward))])
-			freq[pair_type] += 1
+			if "length" in self._cache_freq.keys():
+				self._cache_freq["length"] = len(self._sequence)
 
-		return freq
+			for base_idx in range(len(self._sequence) - 1):
+				pair_forward = [self._sequence[base_idx], self._sequence[base_idx + 1]]
+				pair_reverse = [base_pairs[self._sequence[base_idx]], base_pairs[self._sequence[base_idx + 1]]]
+				pair_type = "/".join(["".join(pair_forward), "".join(pair_reverse)])
+				if pair_type not in self._parameter_list:
+					pair_type = "/".join(["".join(reversed(pair_reverse)), "".join(reversed(pair_forward))])
+				self._cache_freq[pair_type] += 1
+
+			return self._cache_freq
 
 
 	def get_energy(self, obj_parameter, base_pairs):
@@ -203,41 +214,8 @@ class Sequence:
 		"""
 		# calculate energy
 		energy = 0.0
-
-		init_param_name = [param for param in obj_parameter.get_parameter().keys() if "init" in param]
-		init_param_data = [param.replace("init", "").replace("_", "") for param in init_param_name]
-		for idx, param in enumerate(init_param_data):
-			if param == "":
-				# single initiation
-				energy += obj_parameter.get_parameter(init_param_name[idx])[0]
-			elif self._sequence[0] in list(param):
-				# multiple initiation
-				energy += obj_parameter.get_parameter(init_param_name[idx])[0]
-
-		end_param = [param for param in obj_parameter.get_parameter().keys() if "end" in param]
-		end_param_data = [param.replace("end", "").replace("_", "") for param in end_param]
-		for idx, param in enumerate(end_param_data):
-			if param == "":
-				# single end
-				energy += obj_parameter.get_parameter(end_param[idx])[0]
-			elif self._sequence[-1] in list(param):
-				# multiple end
-				energy += obj_parameter.get_parameter(end_param[idx])[0]
-
-		for base_idx in range(len(self._sequence) - 1):
-			pair_forward = [self._sequence[base_idx], self._sequence[base_idx + 1]]
-			pair_reverse = [base_pairs[self._sequence[base_idx]], base_pairs[self._sequence[base_idx + 1]]]
-			pair_type = "/".join(["".join(pair_forward), "".join(pair_reverse)])
-			if pair_type not in self._parameter_list:
-				pair_type = "/".join(["".join(reversed(pair_reverse)), "".join(reversed(pair_forward))])
-
-			energy += obj_parameter.get_parameter(pair_type)[0]
-
-		if self._is_self_complement and "symmetry" in obj_parameter.get_parameter().keys():
-			energy += obj_parameter.get_parameter("symmetry")[0]
-
-		if "length" in obj_parameter.get_parameter().keys():
-			energy += obj_parameter.get_parameter("length")[0] * len(self._sequence)
+		freq = self.get_freq(obj_parameter.get_parameter().keys(), base_pairs)
+		energy = sum([cnt_pair * obj_parameter.get_parameter(parameter_type)[0] for parameter_type, cnt_pair in freq.items()])
 
 		return energy
 
