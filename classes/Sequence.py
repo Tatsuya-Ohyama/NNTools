@@ -162,10 +162,10 @@ class Sequence:
 		for idx, param in enumerate(init_param_data):
 			if param == "":
 				# single initiation
-				freq[init_param[idx]] += 1
+				freq[init_param_name[idx]] += 1
 			elif self._sequence[0] in list(param):
 				# multiple initiation
-				freq[init_param[idx]] += 1
+				freq[init_param_name[idx]] += 1
 
 		end_param = [param for param in parameter_types if "end" in param]
 		end_param_data = [param.replace("end", "").replace("_", "") for param in end_param]
@@ -204,15 +204,15 @@ class Sequence:
 		# calculate energy
 		energy = 0.0
 
-		init_param = [param for param in obj_parameter.get_parameter().keys() if "init" in param]
-		init_param_data = [param.replace("init", "").replace("_", "") for param in init_param]
+		init_param_name = [param for param in obj_parameter.get_parameter().keys() if "init" in param]
+		init_param_data = [param.replace("init", "").replace("_", "") for param in init_param_name]
 		for idx, param in enumerate(init_param_data):
 			if param == "":
 				# single initiation
-				energy += obj_parameter.get_parameter(init_param[idx])[0]
+				energy += obj_parameter.get_parameter(init_param_name[idx])[0]
 			elif self._sequence[0] in list(param):
 				# multiple initiation
-				energy += obj_parameter.get_parameter(init_param[idx])[0]
+				energy += obj_parameter.get_parameter(init_param_name[idx])[0]
 
 		end_param = [param for param in obj_parameter.get_parameter().keys() if "end" in param]
 		end_param_data = [param.replace("end", "").replace("_", "") for param in end_param]
