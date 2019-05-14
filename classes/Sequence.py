@@ -158,7 +158,7 @@ class Sequence:
 					continue
 				elif param.startswith("init"):
 					# initiation parameter
-					list_init = [self._sequence[0] + self._complement[0], self._sequence[0] + self._complement[0]]
+					list_init = [self._sequence[0] + self._complement[0], self._complement[0] + self._sequence[0]]
 					if param.replace("init_", "") in list_init:
 						self._cache_freq[param] += 1
 
