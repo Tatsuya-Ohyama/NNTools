@@ -16,6 +16,7 @@ import itertools
 from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_EVEN
 from joblib import Parallel, delayed
 from pprint import pprint
+from decimal import Decimal
 
 from basic_func import check_exist, check_overwrite
 from classes.Parameter import Parameter
@@ -104,7 +105,7 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 			# parepare increased parameter
 			parameter_new = parameters_opt[parameter_idx].clone()
 			parameter_new.set_name(parameter_type + "_new")
-			parameter_new.set_parameter(parameter_type, parameter_new.get_parameter(parameter_type)[0] + direction[parameter_idx] * increment)
+			parameter_new.set_parameter(parameter_type, Decimal(str(parameter_new.get_parameter(parameter_type)[0])) + Decimal(str(direction[parameter_idx] * increment)))
 
 			# evaluation by mode
 			if len(evaluation_val_tmp) == 0:
