@@ -16,6 +16,7 @@ import itertools
 from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_EVEN
 from joblib import Parallel, delayed
 from pprint import pprint
+from decimal import Decimal
 
 from basic_func import check_exist, check_overwrite
 from classes.Parameter import Parameter
@@ -24,9 +25,9 @@ from classes.DataGroup import DataGroup
 
 
 # =============== variable =============== #
-DEFAULT_PARAMETER_TYPES = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "5term_TA"]
+DEFAULT_PARAMETER_TYPES = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "re:^T/^A"]
 DEFAULT_BASE_PAIRS = {"A": "T", "G": "C", "C": "G", "T": "A"}
-VERSION = "5.0 (#107)"
+VERSION = "6.0"
 parameter_types = DEFAULT_PARAMETER_TYPES
 base_pairs = DEFAULT_BASE_PAIRS
 iteration = 0
@@ -104,7 +105,7 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 			# parepare increased parameter
 			parameter_new = parameters_opt[parameter_idx].clone()
 			parameter_new.set_name(parameter_type + "_new")
-			parameter_new.set_parameter(parameter_type, parameter_new.get_parameter(parameter_type)[0] + direction[parameter_idx] * increment)
+			parameter_new.set_parameter(parameter_type, Decimal(str(parameter_new.get_parameter(parameter_type)[0])) + Decimal(str(direction[parameter_idx] * increment)))
 
 			# evaluation by mode
 			if len(evaluation_val_tmp) == 0:
@@ -322,23 +323,10 @@ if __name__ == '__main__':
 
 		for line_val in reader:
 			line_val[2:] = [x if x != "" else "0.0" for x in line_val[2:]]
-			exp_datas[0].append(
-				Sequence(line_val[0]).set_sequence(line_val[1], base_pairs).set_parameter_type(parameter_types).set_energy_type(exp_label[0]),
-				float(line_val[2]),
-				float(line_val[3])
-			)
-			exp_datas[1].append(
-				Sequence(line_val[0]).set_sequence(line_val[1], base_pairs).set_parameter_type(parameter_types).set_energy_type(
-					exp_label[1]),
-					float(line_val[4]),
-					float(line_val[5])
-			)
-			exp_datas[2].append(
-				Sequence(line_val[0]).set_sequence(line_val[1], base_pairs).set_parameter_type(parameter_types).set_energy_type(
-					exp_label[2]),
-					float(line_val[6]),
-					float(line_val[7])
-			)
+			obj_sequence = Sequence(line_val[0]).set_sequence(line_val[1], base_pairs).set_parameter_type(parameter_types)
+			exp_datas[0].append(obj_sequence, float(line_val[2]), float(line_val[3]))
+			exp_datas[1].append(obj_sequence, float(line_val[4]), float(line_val[5]))
+			exp_datas[2].append(obj_sequence, float(line_val[6]), float(line_val[7]))
 	sys.stderr.write("Loading experimental values.\n")
 
 
@@ -570,8 +558,8 @@ if __name__ == '__main__':
 			diff_dH = pred_dH - exp_dH
 			diff_dS = pred_dS - exp_dS
 			diff_dG = pred_dG - exp_dG
-			freq = [sequence.get_freq(parameter_types, base_pairs)[parameter_type] for parameter_type in parameter_types]
-			writer.writerow([name, seq, exp_dH, exp_dS, exp_dG, pred_dH, pred_dS, pred_dG, diff_dH, diff_dS, diff_dG] + [""] + freq)
+			freq = sequence.get_freq(parameter_types, base_pairs)
+			writer.writerow([name, seq, exp_dH, exp_dS, exp_dG, pred_dH, pred_dS, pred_dG, diff_dH, diff_dS, diff_dG] + [""] + [freq[parameter_type] for parameter_type in parameter_types])
 		writer.writerow([""])
 
 		writer.writerow(["Correlation: exp. vs predict", "", "dH", "dS", "dG"])
