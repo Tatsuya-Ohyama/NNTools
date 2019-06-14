@@ -53,7 +53,7 @@ class Parameter:
 	def append_parameter(self, parameter_type, parameter_val):
 		"""
 		append parameter with error method
-		@param parameter_type: parameter name ("AA/TT", "AT/TA", ..., "init_XX", "symmetry", or "re:^T/^A")
+		@param parameter_type: parameter name ("AA/TT", "AT/TA", ..., "init_XX", "symmetry", or "5term_TA (by regexp)")
 		@param parameter_val: parameter value list ([parameter, minimum parameter with error, maximum value with error] or parameter)
 		@return self
 		"""
@@ -65,7 +65,7 @@ class Parameter:
 	def set_parameter(self, parameter_type, parameter_val = None):
 		"""
 		set parameter with error method
-		@param parameter_type: parameter name (all, "AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", or "re:^T/^A")
+		@param parameter_type: parameter name (all, "AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", or "5term_TA (by regexp)")
 		@param parameter_val: parameter value ([parameter, minimum parameter with error, maximum value with error] or parameter)
 		@return self
 		"""
@@ -196,6 +196,8 @@ class Parameter:
 		elif data_type == "fix":
 			error = {k: abs(v[1] - v[2]) / 2 for k, v in self._parameters.items()}
 			values = {k: [v[1] + error[k], error[k]] for k, v in self._parameters.items()}
+		elif data_type == "name":
+			return self._parameters.keys()
 		else:
 			sys.stderr.write("ERROR: undefined data_type at get_parameter() in Parameter class.\n")
 			sys.exit(1)

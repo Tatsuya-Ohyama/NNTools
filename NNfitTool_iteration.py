@@ -511,7 +511,10 @@ if __name__ == '__main__':
 		writer.writerow([""])
 
 		writer.writerow(["<< Results >>"])
-		writer.writerow(["Parameter (optimized)", "dH", "dH (error)", "dS", "dS (error)", "dG", "dG (error)", "", "Change (dH)", "Change (dS)", "Change (dG)"])
+		if args.flag_separate:
+			writer.writerow(["Parameter (optimized)", "dH", "dH (error)", "dS", "dS (error)", "dG", "dG (error)", "", "Change (dH)", "Change (dS)", "Change (dG)"])
+		else:
+			writer.writerow(["Parameter (optimized)", "dH", "dH (error)", "dS * 1000", "dS * 1000 (error)", "dG", "dG (error)", "", "Change (dH)", "Change (dS)", "Change (dG)"])
 		for parameter_type in parameter_types:
 			parameter_dH = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters[0].get_parameter(data_type = "fix")[parameter_type]]
 			parameter_dS = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters[1].get_parameter(data_type = "fix")[parameter_type]]

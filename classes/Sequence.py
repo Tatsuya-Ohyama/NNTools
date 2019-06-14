@@ -154,9 +154,7 @@ class Sequence:
 
 			for param in parameter_types:
 				# special penalty
-				if "/" in param:
-					continue
-				elif param.startswith("init"):
+				if param.startswith("init"):
 					# initiation parameter
 					list_init = [self._sequence[0] + self._complement[0], self._complement[0] + self._sequence[0]]
 					if param.replace("init_", "") in list_init:
@@ -182,12 +180,11 @@ class Sequence:
 						# match sequence and complementary sequence
 						self._cache_freq[param] += 1
 
-				else:
+				elif "/" not in param:
 					sys.stderr.write("ERROR: undefined parameter at get_freq() in Sequence class ({0}).\n".format(param))
 					sys.exit(1)
 
 			for base_idx in range(len(self._sequence) - 1):
-				# regular base pair parameter
 				pair_type = "/".join(["".join(self._sequence[base_idx : base_idx + 2]), "".join(self._complement[base_idx : base_idx + 2])])
 				if pair_type not in self._parameter_list:
 					pair_type = "/".join(["".join(reversed(self._complement[base_idx : base_idx + 2])), "".join(reversed(self._sequence[base_idx : base_idx + 2]))])
@@ -205,7 +202,7 @@ class Sequence:
 		"""
 		# calculate energy
 		energy = 0.0
-		freq = self.get_freq(obj_parameter.get_parameter().keys(), base_pairs)
+		freq = self.get_freq(obj_parameter.get_parameter(data_type = "name"), base_pairs)
 		energy = sum([cnt_pair * obj_parameter.get_parameter(parameter_type)[0] for parameter_type, cnt_pair in freq.items()])
 
 		return energy
