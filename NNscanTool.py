@@ -169,9 +169,4 @@ if __name__ == '__main__':
 			sequence.set_sequence(str_sequence[i : i + block_length], base_pair)
 			freq = sequence.get_freq(parameters[0], base_pair)
 			energy = [sequence.get_energy(param, base_pair) for param in parameters]
-			writer.writerow([sequence.get_energy(param, base_pair) for param in parameters] + [sequence.get_sequence("string")] + energy + [""] + [freq[param] for param in parameter_types])
-
-
-
-		# results.append([str_sequence[i : i + block_length], [i + 1, i + block_length]] + [sequence.get_energy(param, base_pair) for param in parameters])
-
+			writer.writerow([i + 1, i + 1, i + block_length] + [sequence.get_sequence("string")] + energy + [""] + [freq[param] for param in parameter_types])
