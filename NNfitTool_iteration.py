@@ -27,7 +27,7 @@ from classes.DataGroup import DataGroup
 # =============== variable =============== #
 DEFAULT_PARAMETER_TYPES = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "re:^T/^A"]
 DEFAULT_BASE_PAIRS = {"A": "T", "G": "C", "C": "G", "T": "A"}
-VERSION = "6.0"
+VERSION = "6.1"
 parameter_types = DEFAULT_PARAMETER_TYPES
 base_pairs = DEFAULT_BASE_PAIRS
 iteration = 0
@@ -482,13 +482,14 @@ if __name__ == '__main__':
 		writer.writerow(["<< Input >>"])
 		writer.writerow(["Program version", VERSION])
 		writer.writerow(["Experimental data", args.experiment_file])
+		writer.writerow(["Reference parameter", args.ref_param])
 		writer.writerow(["Initial iteration", args.initial_increment])
 		writer.writerow(["Increment threshold", args.threshold_increment])
 		writer.writerow(["Iteration (whole)", args.optimize_count])
 		writer.writerow(["Temperature", args.temperature])
 		writer.writerow(["Separate calculation", args.flag_separate])
+		writer.writerow(["Error calculation", args.flag_error])
 		writer.writerow(["Evaluation mode", args.mode])
-		writer.writerow(["Reference parameter", args.ref_param])
 		writer.writerow([""])
 
 		writer.writerow(["Initial parameter", "dH", "dS", "dG", "", "Change (dH)", "Change (dS)", "Change (dG)"])
@@ -511,7 +512,10 @@ if __name__ == '__main__':
 		writer.writerow([""])
 
 		writer.writerow(["<< Results >>"])
-		writer.writerow(["Parameter (optimized)", "dH", "dH (error)", "dS", "dS (error)", "dG", "dG (error)", "", "Change (dH)", "Change (dS)", "Change (dG)"])
+		if args.flag_separate:
+			writer.writerow(["Parameter (optimized)", "dH", "dH (error)", "dS", "dS (error)", "dG", "dG (error)", "", "Change (dH)", "Change (dS)", "Change (dG)"])
+		else:
+			writer.writerow(["Parameter (optimized)", "dH", "dH (error)", "dS * 1000", "dS * 1000 (error)", "dG", "dG (error)", "", "Change (dH)", "Change (dS)", "Change (dG)"])
 		for parameter_type in parameter_types:
 			parameter_dH = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters[0].get_parameter(data_type = "fix")[parameter_type]]
 			parameter_dS = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters[1].get_parameter(data_type = "fix")[parameter_type]]
