@@ -102,8 +102,6 @@ if __name__ == '__main__':
 					tmp_base_pair = {}
 					tmp_base_pair[base[0][0:1]]= base[1][0:1]
 					tmp_base_pair[base[0][1:2]]= base[1][1:2]
-					tmp_base_pair[base[1][0:1]]= base[0][0:1]
-					tmp_base_pair[base[1][1:2]]= base[0][1:2]
 					for k, v in tmp_base_pair.items():
 						if k in base_pair.keys():
 							if base_pair[k] != v:
@@ -114,6 +112,13 @@ if __name__ == '__main__':
 				for param_idx in range(len(parameters)):
 					# register parameter
 					parameters[param_idx].append_parameter(line_val[0], float(line_val[param_idx + 1].strip()))
+
+	new_base_pair = {}
+	for k, v in base_pair.items():
+		new_base_pair[k] = v
+		if v not in base_pair.keys():
+			new_base_pair[v] = k
+	base_pair = new_base_pair
 
 
 	# generate block sequence and calculate stability
