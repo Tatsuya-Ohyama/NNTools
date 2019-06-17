@@ -17,7 +17,6 @@ class Sequence:
 		self._sequence = ""
 		self._complement = ""
 		self._is_self_complement = False
-		self._parameter_list = []
 
 		self._cache_parameter_types = []
 		self._cache_base_pairs = {}
@@ -60,26 +59,6 @@ class Sequence:
 		@return self
 		"""
 		self._name = name
-		return self
-
-
-	def append_parameter(self, parameter):
-		"""
-		append parameter to parameter list
-		@param parameter: parameter name
-		@return self
-		"""
-		self._parameter_list.append(parameter)
-		return self
-
-
-	def set_parameter_type(self, parameter_list):
-		"""
-		set parameter list
-		@param parameter_list: list of parameters
-		@return self
-		"""
-		self._parameter_list = parameter_list
 		return self
 
 
@@ -137,11 +116,14 @@ class Sequence:
 	def get_freq(self, parameter_types, base_pairs, flag_cache = True):
 		"""
 		return pair frequency
-		@param parameter_types: list for parameter types
+		@param parameter_types: list for parameter types or parameter object
 		@param base_pairs: dict for base pairs
 		@param flag_cache: use cache data (Default: True)
 		@return pair frequency list
 		"""
+		if type(parameter_types) == Parameter:
+			parameter_types = parameter_types.get_parameter(data_type = "name")
+
 		if flag_cache and parameter_types == self._cache_parameter_types and base_pairs == self._cache_base_pairs:
 			# flag_cache is True and condition is the same => use cache
 			return self._cache_freq
@@ -154,9 +136,7 @@ class Sequence:
 
 			for param in parameter_types:
 				# special penalty
-				if "/" in param:
-					continue
-				elif param.startswith("init"):
+				if param.startswith("init"):
 					# initiation parameter
 					list_init = [self._sequence[0] + self._complement[0], self._complement[0] + self._sequence[0]]
 					if param.replace("init_", "") in list_init:
@@ -182,14 +162,14 @@ class Sequence:
 						# match sequence and complementary sequence
 						self._cache_freq[param] += 1
 
-				else:
+				elif "/" not in param:
 					sys.stderr.write("ERROR: undefined parameter at get_freq() in Sequence class ({0}).\n".format(param))
 					sys.exit(1)
 
 			for base_idx in range(len(self._sequence) - 1):
-				# regular base pair parameter
 				pair_type = "/".join(["".join(self._sequence[base_idx : base_idx + 2]), "".join(self._complement[base_idx : base_idx + 2])])
-				if pair_type not in self._parameter_list:
+				if pair_type not in parameter_types:
+					# if not in parameter_type, generate reversed parameter_type
 					pair_type = "/".join(["".join(reversed(self._complement[base_idx : base_idx + 2])), "".join(reversed(self._sequence[base_idx : base_idx + 2]))])
 				self._cache_freq[pair_type] += 1
 
@@ -205,7 +185,7 @@ class Sequence:
 		"""
 		# calculate energy
 		energy = 0.0
-		freq = self.get_freq(obj_parameter.get_parameter().keys(), base_pairs)
+		freq = self.get_freq(obj_parameter, base_pairs)
 		energy = sum([cnt_pair * obj_parameter.get_parameter(parameter_type)[0] for parameter_type, cnt_pair in freq.items()])
 
 		return energy
