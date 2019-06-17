@@ -179,7 +179,7 @@ class Parameter:
 		elif parameter_type in self._change.keys():
 			return self._change[parameter_type]
 		else:
-			sys.stderr.write("ERROR: undefined parameter type.\n")
+			sys.stderr.write("ERROR: undefined parameter type at is_chage() in Parameter class ({0}).\n".format(parameter_type))
 			sys.exit(1)
 
 
@@ -199,7 +199,7 @@ class Parameter:
 		elif data_type == "name":
 			return self._parameters.keys()
 		else:
-			sys.stderr.write("ERROR: undefined data_type at get_parameter() in Parameter class.\n")
+			sys.stderr.write("ERROR: undefined data_type at get_parameter() in Parameter class.\n".format(data_type))
 			sys.exit(1)
 
 		if parameter_type is None:
@@ -213,7 +213,7 @@ class Parameter:
 				return values[parameter_key]
 			else:
 				# all parameters are specified
-				sys.stderr.write("ERROR: undefined parameter_type in get_parameter() in Parameter class.\n")
+				sys.stderr.write("ERROR: undefined parameter_type in get_parameter() in Parameter class ({0}).\n".format(parameter_type))
 				sys.exit(1)
 
 

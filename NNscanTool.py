@@ -67,7 +67,7 @@ if __name__ == '__main__':
 	parser.add_argument("-b", dest = "block_length", metavar = "SEQUENCE_RANGE", type = int, help = "block length for sequence (Default: full length)")
 	parser.add_argument("-o", dest = "file_output", metavar = "OUTPUT_FILE.csv", required = True, help = "output file")
 	parser.add_argument("-l", dest = "file_log", metavar = "LOG_FILE.log", help = "log file (if not specify, a log file with the same name as -o option is generated)")
-	parser.add_argument("--graph", dest = "file_graph", metavar = "GRAPH_BASE_NAME", help = "base name of graph (.png) (if not specify, a graph files with the same name as -o option is generated)")
+	parser.add_argument("--graph", dest = "file_graph", metavar = "GRAPH_BASE_NAME", help = "base name of graph (.png)")
 	parser.add_argument("-O", dest = "flag_overwrite", action = "store_true", default = False, help = "overwrite forcibly")
 	args = parser.parse_args()
 
@@ -129,17 +129,7 @@ if __name__ == '__main__':
 		file_log = path[0] + ".log"
 	if args.flag_overwrite == False:
 		check_overwrite(args.file_output)
-	if args.flag_overwrite == False:
 		check_overwrite(args.file_log)
-
-	files_graph = []
-	for param in parameters:
-		if args.file_graph is None:
-			path = os.path.splitext(args.file_output)
-			path = path[0] + "_" + param.get_name() + ".png"
-			if args.flag_overwrite == False:
-				check_overwrite(path)
-			files_graph.append(path)
 
 	with open(file_log, "w") as obj_output:
 		obj_output.write("This log file was generated at " + datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S") + "\n\n")
@@ -189,45 +179,53 @@ if __name__ == '__main__':
 			list_y.append(energy)
 
 	# graph
-	for param_idx in range(len(parameters)):
-		font_size = 22
-		y = [v[param_idx] for v in list_y]
-		xtic = [1, len(x), len(x) / 10]
-		ystep = (max(y) - min(y)) / 10
-		ytic = [min(y) - ystep, max(y) + ystep, ystep]
-		name = parameters[param_idx].get_name()
+	if args.file_graph is not None:
+		files_graph = []
+		for param in parameters:
+			if args.file_graph is None:
+				path = os.path.splitext(args.file_output)
+				path = path[0] + "_" + param.get_name() + ".png"
+				if args.flag_overwrite == False:
+					check_overwrite(path)
+				files_graph.append(path)
 
-		fig = plt.figure(1, figsize=(8.345, 6.95))
-		plt.rcParams['axes.linewidth'] = 2.0
-		plt.rcParams['axes.axisbelow'] = True
-		plt.rcParams['font.family'] = "Segoe UI"
-		plt.rcParams['xtick.direction'] = "in"
-		plt.rcParams.update({"mathtext.default": "regular"})
+		for param_idx in range(len(parameters)):
+			font_size = 22
+			y = [v[param_idx] for v in list_y]
+			xtic = [1, len(x), len(x) / 10]
+			ystep = (max(y) - min(y)) / 10
+			ytic = [min(y) - ystep, max(y) + ystep, ystep]
+			name = parameters[param_idx].get_name()
 
-		ax = fig.add_subplot(111)
-		ax.grid(True, axis = "y", color = "#000000", linewidth = 1, dashes = (5,2.5))
-		ax.tick_params(axis = "x", which = "major", labelsize = font_size, pad = 5, rotation = 90)
-		ax.tick_params(axis = "y", which = "major", labelsize = font_size, pad = 5)
+			fig = plt.figure(1, figsize=(8.345, 6.95))
+			plt.rcParams['axes.linewidth'] = 2.0
+			plt.rcParams['axes.axisbelow'] = True
+			plt.rcParams['font.family'] = "Segoe UI"
+			plt.rcParams['xtick.direction'] = "in"
+			plt.rcParams.update({"mathtext.default": "regular"})
 
-		ax.set_xlabel("Block number", fontsize = font_size)
-		ax.set_xlim(xtic[0], xtic[1])
-		ax.set_xticks(np.arange(xtic[0], xtic[1] + xtic[2], step = xtic[2]))
+			ax = fig.add_subplot(111)
+			ax.grid(True, axis = "y", color = "#000000", linewidth = 1, dashes = (5,2.5))
+			ax.tick_params(axis = "x", which = "major", labelsize = font_size, pad = 5, rotation = 90)
+			ax.tick_params(axis = "y", which = "major", labelsize = font_size, pad = 5)
 
-		ax.set_ylabel(name, fontsize = font_size)
-		ax.set_ylim(ytic[0], ytic[1])
-		ax.set_yticks(np.arange(ytic[0], ytic[1] + ytic[2], step = ytic[2]))
-		ax.yaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
-		# ax.set_yticklabels(ytic_label)
+			ax.set_xlabel("Block number", fontsize = font_size)
+			ax.set_xlim(xtic[0], xtic[1])
+			ax.set_xticks(np.arange(xtic[0], xtic[1] + xtic[2], step = xtic[2]))
 
-		ax.axhline(y = 0, color = "#000000")
-		ax.plot(x,
-				y,
-				color = "#000000",
-				linewidth = 2.0,
-				label = name
-			)
+			ax.set_ylabel(name, fontsize = font_size)
+			ax.set_ylim(ytic[0], ytic[1])
+			ax.set_yticks(np.arange(ytic[0], ytic[1] + ytic[2], step = ytic[2]))
+			ax.yaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
 
-		# ax.legend(fontsize = font_size)
-		fig.tight_layout()
-		plt.savefig(files_graph[param_idx])
-		plt.close()
+			ax.axhline(y = 0, color = "#000000")
+			ax.plot(x,
+					y,
+					color = "#000000",
+					linewidth = 2.0,
+					label = name
+				)
+
+			fig.tight_layout()
+			plt.savefig(files_graph[param_idx])
+			plt.close()
