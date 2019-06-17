@@ -19,11 +19,7 @@ from classes.Sequence import Sequence
 
 
 # =============== variable =============== #
-VERSION = "1.0"
-
-# =============== function =============== #
-
-
+VERSION = "1.1"
 
 # =============== main =============== #
 if __name__ == '__main__':
@@ -56,12 +52,13 @@ if __name__ == '__main__':
 					# generate base_pair
 					base = line_val[0].split("/", 2)
 					tmp_base_pair = {}
-					tmp_base_pair[base[0][0:1]]= base[1][0:1]
-					tmp_base_pair[base[0][1:2]]= base[1][1:2]
+					tmp_base_pair[base[0][0:1]] = base[1][0:1]
+					tmp_base_pair[base[0][1:2]] = base[1][1:2]
 					for k, v in tmp_base_pair.items():
 						if k in base_pair.keys():
 							if base_pair[k] != v:
 								sys.stderr.write("ERROR: base pair are duplicated: {0}-{1} vs {0}-{2}.\n".format(k, base_pair[k], tmp_base_pair[k]))
+								sys.exit(1)
 						else:
 							base_pair[k] = v
 
