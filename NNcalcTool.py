@@ -66,8 +66,7 @@ if __name__ == '__main__':
 							base_pair[k] = v
 
 				for param_idx in range(len(parameters)):
-					print(line_val, len(parameters))
-					parameters[param_idx].append_parameter(line_val[param_idx], float(line_val[param_idx + 1].strip()))
+					parameters[param_idx].append_parameter(line_val[0], float(line_val[param_idx + 1].strip()))
 
 	new_base_pair = {}
 	for k, v in base_pair.items():
@@ -75,7 +74,6 @@ if __name__ == '__main__':
 		if v not in base_pair.keys():
 			new_base_pair[v] = k
 	base_pair = new_base_pair
-	print(base_pair)
 
 
 	# reading sequence
@@ -84,7 +82,7 @@ if __name__ == '__main__':
 		reader = csv.reader(obj_input)
 		flag_read = False
 		for line_val in reader:
-			if line_val[0] == "Parameter":
+			if "Sequence" in line_val:
 				flag_read = True
 				continue
 
@@ -114,7 +112,6 @@ if __name__ == '__main__':
 		obj_output.write("\n")
 		obj_output.write("Output file: {0}\n".format(args.file_output))
 		obj_output.write("\n")
-
 
 	with open(args.file_output, "w") as obj_output:
 		writer = csv.writer(obj_output)
