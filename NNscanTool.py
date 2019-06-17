@@ -22,7 +22,7 @@ from classes.Sequence import Sequence
 
 
 # =============== variable =============== #
-VERSION = "1.1"
+VERSION = "1.2"
 
 
 # =============== function =============== #
@@ -53,7 +53,7 @@ def read_sequence_genbank(input_file):
 			elif line_val.startswith("//"):
 				break
 			elif flag_read:
-				sequence += line_val.strip()[10:75].replace(" ", "")
+				sequence += line_val[10:75].strip().replace(" ", "")
 	return sequence.upper()
 
 
