@@ -12,6 +12,9 @@ import argparse
 import csv
 import os
 import datetime
+import matplotlib.pyplot as plt
+import numpy as np
+import time
 
 from basic_func import check_exist, check_overwrite
 from classes.Parameter import Parameter
@@ -64,6 +67,7 @@ if __name__ == '__main__':
 	parser.add_argument("-b", dest = "block_length", metavar = "SEQUENCE_RANGE", type = int, help = "block length for sequence (Default: full length)")
 	parser.add_argument("-o", dest = "file_output", metavar = "OUTPUT_FILE.csv", required = True, help = "output file")
 	parser.add_argument("-l", dest = "file_log", metavar = "LOG_FILE.log", help = "log file (if not specify, a log file with the same name as -o option is generated)")
+	parser.add_argument("--graph", dest = "file_graph", metavar = "GRAPH_BASE_NAME", help = "base name of graph (.png) (if not specify, a graph files with the same name as -o option is generated)")
 	parser.add_argument("-O", dest = "flag_overwrite", action = "store_true", default = False, help = "overwrite forcibly")
 	args = parser.parse_args()
 
@@ -128,6 +132,15 @@ if __name__ == '__main__':
 	if args.flag_overwrite == False:
 		check_overwrite(args.file_log)
 
+	files_graph = []
+	for param in parameters:
+		if args.file_graph is None:
+			path = os.path.splitext(args.file_output)
+			path = path[0] + "_" + param.get_name() + ".png"
+			if args.flag_overwrite == False:
+				check_overwrite(path)
+			files_graph.append(path)
+
 	with open(file_log, "w") as obj_output:
 		obj_output.write("This log file was generated at " + datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S") + "\n\n")
 		obj_output.write("<< Input >>\n")
@@ -160,6 +173,8 @@ if __name__ == '__main__':
 		obj_output.write("Output file: {0}\n".format(args.file_output))
 		obj_output.write("\n")
 
+	x = []
+	list_y = []
 	with open(args.file_output, "w") as obj_output:
 		writer = csv.writer(obj_output)
 		parameter_types = list(parameters[0].get_parameter(data_type = "name"))
@@ -170,3 +185,49 @@ if __name__ == '__main__':
 			freq = sequence.get_freq(parameters[0], base_pair)
 			energy = [sequence.get_energy(param, base_pair) for param in parameters]
 			writer.writerow([i + 1, i + 1, i + block_length] + [sequence.get_sequence("string")] + energy + [""] + [freq[param] for param in parameter_types])
+			x.append(i + 1)
+			list_y.append(energy)
+
+	# graph
+	for param_idx in range(len(parameters)):
+		font_size = 22
+		y = [v[param_idx] for v in list_y]
+		xtic = [1, len(x), len(x) / 10]
+		ystep = (max(y) - min(y)) / 10
+		ytic = [min(y) - ystep, max(y) + ystep, ystep]
+		name = parameters[param_idx].get_name()
+
+		fig = plt.figure(1, figsize=(8.345, 6.95))
+		plt.rcParams['axes.linewidth'] = 2.0
+		plt.rcParams['axes.axisbelow'] = True
+		plt.rcParams['font.family'] = "Segoe UI"
+		plt.rcParams['xtick.direction'] = "in"
+		plt.rcParams.update({"mathtext.default": "regular"})
+
+		ax = fig.add_subplot(111)
+		ax.grid(True, axis = "y", color = "#000000", linewidth = 1, dashes = (5,2.5))
+		ax.tick_params(axis = "x", which = "major", labelsize = font_size, pad = 5, rotation = 90)
+		ax.tick_params(axis = "y", which = "major", labelsize = font_size, pad = 5)
+
+		ax.set_xlabel("Block number", fontsize = font_size)
+		ax.set_xlim(xtic[0], xtic[1])
+		ax.set_xticks(np.arange(xtic[0], xtic[1] + xtic[2], step = xtic[2]))
+
+		ax.set_ylabel(name, fontsize = font_size)
+		ax.set_ylim(ytic[0], ytic[1])
+		ax.set_yticks(np.arange(ytic[0], ytic[1] + ytic[2], step = ytic[2]))
+		ax.yaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
+		# ax.set_yticklabels(ytic_label)
+
+		ax.axhline(y = 0, color = "#000000")
+		ax.plot(x,
+				y,
+				color = "#000000",
+				linewidth = 2.0,
+				label = name
+			)
+
+		# ax.legend(fontsize = font_size)
+		fig.tight_layout()
+		plt.savefig(files_graph[param_idx])
+		plt.close()
