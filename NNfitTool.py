@@ -27,7 +27,7 @@ from classes.DataGroup import DataGroup
 # =============== variable =============== #
 DEFAULT_PARAMETER_TYPES = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "re:^T/^A"]
 DEFAULT_BASE_PAIRS = {"A": "T", "G": "C", "C": "G", "T": "A"}
-VERSION = "6.1"
+VERSION = "6.2"
 parameter_types = DEFAULT_PARAMETER_TYPES
 base_pairs = DEFAULT_BASE_PAIRS
 iteration = 0
@@ -279,17 +279,19 @@ if __name__ == '__main__':
 						flag_init = False
 
 					parameter_types.append(line_val[0])
-					if "/" in line_val[0]:
+					if "/" in line_val[0] and not line_val[0].startswith("init") and not line_val[0].startswith("length") and not line_val[0].startswith("symmetry") and not line_val[0].startswith("re:"):
 						# lexical analysis for parameter label to base pair
-						bases = line_val[0].split("/")
-						for idx in range(len(bases)):
-							if bases[0][idx] not in base_pairs.keys():
-								# first registration for base[0][idx]
-								base_pairs[bases[0][idx]] = bases[1][idx]
-							elif base_pairs[bases[0][idx]] != bases[1][idx]:
-								# error with multiple base pair
-								sys.stderr.write("ERROR: multiple bases are registered as base pairs for a specific base. {0}-{1} and {0}-{2}\n".format(bases[0][idx], base_pairs[bases[0][idx]], bases[1][idx]))
-								sys.exit(1)
+						bases = line_val[0].split("/", 2)
+						tmp_base_pair = {}
+						tmp_base_pair[bases[0][0:1]] = bases[1][0:1]
+						tmp_base_pair[bases[0][1:2]] = bases[1][1:2]
+						for k, v in tmp_base_pair.items():
+							if k in base_pair.keys():
+								if base_pair[k] != v:
+									sys.stderr.write("ERROR: base pair are duplicated: {0}-{1} vs {0}-{2}.\n".format(k, base_pair[k], tmp_base_pair[k]))
+									sys.exit(1)
+								else:
+									base_pair[k] = v
 
 					parameters[0].append_parameter(line_val[0], float(line_val[pos_sep - pos_offset * 3]))
 					parameters[1].append_parameter(line_val[0], float(line_val[pos_sep - pos_offset * 2]))
@@ -310,6 +312,13 @@ if __name__ == '__main__':
 				parameter.append_parameter(parameter_type, 0.0)
 
 	parameters_init = [copy.deepcopy(parameter) for parameter in parameters]
+
+	new_base_pair = {}
+	for k, v in base_pair.items():
+		new_base_pair[k] = v
+		if v not in base_pair.keys():
+			new_base_pair[v] = k
+	base_pair = new_base_pair
 
 
 	# reading sequence and experimental data
