@@ -27,9 +27,9 @@ from classes.DataGroup import DataGroup
 # =============== variable =============== #
 DEFAULT_PARAMETER_TYPES = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "re:^T/^A"]
 DEFAULT_BASE_PAIRS = {"A": "T", "G": "C", "C": "G", "T": "A"}
-VERSION = "6.2"
+VERSION = "6.3"
 parameter_types = DEFAULT_PARAMETER_TYPES
-base_pairs = DEFAULT_BASE_PAIRS
+base_pair = DEFAULT_BASE_PAIRS
 iteration = 0
 
 
@@ -243,7 +243,7 @@ if __name__ == '__main__':
 
 	# loading reference parameter
 	if args.ref_param is not None:
-		base_pairs = {}
+		base_pair = {}
 		parameter_types = []
 		check_exist(args.ref_param, 2)
 
@@ -290,8 +290,8 @@ if __name__ == '__main__':
 								if base_pair[k] != v:
 									sys.stderr.write("ERROR: base pair are duplicated: {0}-{1} vs {0}-{2}.\n".format(k, base_pair[k], tmp_base_pair[k]))
 									sys.exit(1)
-								else:
-									base_pair[k] = v
+							else:
+								base_pair[k] = v
 
 					parameters[0].append_parameter(line_val[0], float(line_val[pos_sep - pos_offset * 3]))
 					parameters[1].append_parameter(line_val[0], float(line_val[pos_sep - pos_offset * 2]))
@@ -323,7 +323,7 @@ if __name__ == '__main__':
 
 	# reading sequence and experimental data
 	check_exist(args.experiment_file, 2)
-	exp_datas = [DataGroup(label).set_base_pair(base_pairs) for label in exp_label]
+	exp_datas = [DataGroup(label).set_base_pair(base_pair) for label in exp_label]
 	with open(args.experiment_file, "r") as obj_input:
 		reader = csv.reader(obj_input)
 
@@ -332,7 +332,7 @@ if __name__ == '__main__':
 
 		for line_val in reader:
 			line_val[2:] = [x if x != "" else "0.0" for x in line_val[2:]]
-			obj_sequence = Sequence(line_val[0]).set_sequence(line_val[1], base_pairs).set_parameter_type(parameter_types)
+			obj_sequence = Sequence(line_val[0]).set_sequence(line_val[1], base_pair)
 			exp_datas[0].append(obj_sequence, float(line_val[2]), float(line_val[3]))
 			exp_datas[1].append(obj_sequence, float(line_val[4]), float(line_val[5]))
 			exp_datas[2].append(obj_sequence, float(line_val[6]), float(line_val[7]))
@@ -571,7 +571,7 @@ if __name__ == '__main__':
 			diff_dH = pred_dH - exp_dH
 			diff_dS = pred_dS - exp_dS
 			diff_dG = pred_dG - exp_dG
-			freq = sequence.get_freq(parameter_types, base_pairs)
+			freq = sequence.get_freq(parameter_types, base_pair)
 			writer.writerow([name, seq, exp_dH, exp_dS, exp_dG, pred_dH, pred_dS, pred_dG, diff_dH, diff_dS, diff_dG] + [""] + [freq[parameter_type] for parameter_type in parameter_types])
 		writer.writerow([""])
 
