@@ -27,13 +27,36 @@ from classes.DataGroup import DataGroup
 # =============== variable =============== #
 DEFAULT_PARAMETER_TYPES = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "re:^T/^A"]
 DEFAULT_BASE_PAIRS = {"A": "T", "G": "C", "C": "G", "T": "A"}
-VERSION = "6.2"
+VERSION = "6.4"
 parameter_types = DEFAULT_PARAMETER_TYPES
-base_pairs = DEFAULT_BASE_PAIRS
+base_pair = DEFAULT_BASE_PAIRS
 iteration = 0
+TEMPLATE_PARAM = "template_ref_param.csv"
+TEMPLATE_EXP = "template_exp.csv"
 
 
 # =============== function =============== #
+def make_template(flag_overwrite):
+	"""
+	create template files for ref_param.csv and ref_exp.csv
+	"""
+	if flag_overwrite == False:
+		check_overwrite(TEMPLATE_PARAM)
+	with open(TEMPLATE_PARAM, "w") as obj_output:
+		writer = csv.writer(obj_output)
+		writer.writerow(["Parameter", "dH", "dS", "dG", "", "dH (change)", "dS (change)", "dG (change)"])
+		writer.writerows([[param_type, 0.0, 0.0, 0.0, "", True, True, True] for param_type in DEFAULT_PARAMETER_TYPES])
+	sys.stderr.write("{0} is created.\n".format(TEMPLATE_PARAM))
+
+	if flag_overwrite == False:
+		check_overwrite(TEMPLATE_EXP)
+	with open(TEMPLATE_EXP, "w") as obj_output:
+		writer = csv.writer(obj_output)
+		writer.writerow(["Label", "Sequence", "dH", "dH (error)", "dS", "dS (error)", "dG", "dG (error)"])
+	sys.stderr.write("{0} is created.\n".format(TEMPLATE_EXP))
+
+
+
 def calculation_worker(parameter, exp_data, mode, increment, threshold_increment, verbose, error_sign = None):
 	# calculate parameter
 	# loop for energy type: dH, dS, and dG
@@ -206,11 +229,21 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description = "NNfitTool.py", formatter_class=argparse.RawTextHelpFormatter)
 	input_group = parser.add_argument_group("Input")
-	input_group.add_argument("-x", dest = "experiment_file", metavar = "EXP.csv", required = True, help = "sequence and experimental value file")
-	input_group.add_argument("-r", dest = "ref_param", metavar = "REF_PARAM.csv", help = "referenced parameter values")
+	input_group.add_argument("-x", dest = "experiment_file", metavar = "EXP.csv", required = "--make-template" not in sys.argv,
+	help = """sequence and experimental value file
+column: Label, Sequence, dH, dH(error), dS, dS(error), dG, and dG(error)
+""")
+	input_group.add_argument("-r", dest = "ref_param", metavar = "REF_PARAM.csv",
+	help = """referenced parameter values
+column: Parameter type, dH, dS, dG, space, dH(change flag), dS(change flag), and dG(change flag))
+Parameter type: AA/TT, GC/CG, or etc, and re: (regexp) and reg: (counted pattern by regexp)
+e.g., "re:^A/^T" and "re:^T/^A" (initial parameter for A/T (both specification require))
+e.g., "reg:.*?G.*?/.*?C.*?" (number of G/C pair parameter)
+e.g., "reg:./." (length parameter)
+""")
 
 	output_group = parser.add_argument_group("Output")
-	output_group.add_argument("-o", dest = "output_file", metavar = "OUTPUT.csv", required = True, help = "output file")
+	output_group.add_argument("-o", dest = "output_file", metavar = "OUTPUT.csv", required = "--make-template" not in sys.argv, help = "output file")
 	output_group.add_argument("-O", dest = "flag_overwrite", action = "store_true", default = False, help = "overwrite forcibly")
 
 	config_group = parser.add_argument_group("Config")
@@ -227,8 +260,13 @@ if __name__ == '__main__':
 	misc_group = parser.add_argument_group("Misc")
 	misc_group.add_argument("-t", dest = "thread", metavar = "THREAD", type = int, default = 1, help = "number of threads for parallel calculation (Default: 1)")
 	misc_group.add_argument("--verbose", "-v", dest = "verbose", action = "count", default = 0, help = "verbose (-v: display results / -vv: display calculation results)")
+	misc_group.add_argument("--make-template", dest = "flag_make_template", action = "store_true", default = False, help = "make template files ({0} and {1}) and exit".format(TEMPLATE_PARAM, TEMPLATE_EXP))
+
 	args = parser.parse_args()
 
+	if args.flag_make_template:
+		make_template(args.flag_overwrite)
+		sys.exit(0)
 
 	# calculate target
 	target_list = [0, 2]	# without dS
@@ -243,7 +281,7 @@ if __name__ == '__main__':
 
 	# loading reference parameter
 	if args.ref_param is not None:
-		base_pairs = {}
+		base_pair = {}
 		parameter_types = []
 		check_exist(args.ref_param, 2)
 
@@ -290,8 +328,8 @@ if __name__ == '__main__':
 								if base_pair[k] != v:
 									sys.stderr.write("ERROR: base pair are duplicated: {0}-{1} vs {0}-{2}.\n".format(k, base_pair[k], tmp_base_pair[k]))
 									sys.exit(1)
-								else:
-									base_pair[k] = v
+							else:
+								base_pair[k] = v
 
 					parameters[0].append_parameter(line_val[0], float(line_val[pos_sep - pos_offset * 3]))
 					parameters[1].append_parameter(line_val[0], float(line_val[pos_sep - pos_offset * 2]))
@@ -323,7 +361,7 @@ if __name__ == '__main__':
 
 	# reading sequence and experimental data
 	check_exist(args.experiment_file, 2)
-	exp_datas = [DataGroup(label).set_base_pair(base_pairs) for label in exp_label]
+	exp_datas = [DataGroup(label).set_base_pair(base_pair) for label in exp_label]
 	with open(args.experiment_file, "r") as obj_input:
 		reader = csv.reader(obj_input)
 
@@ -332,7 +370,7 @@ if __name__ == '__main__':
 
 		for line_val in reader:
 			line_val[2:] = [x if x != "" else "0.0" for x in line_val[2:]]
-			obj_sequence = Sequence(line_val[0]).set_sequence(line_val[1], base_pairs).set_parameter_type(parameter_types)
+			obj_sequence = Sequence(line_val[0]).set_sequence(line_val[1], base_pair)
 			exp_datas[0].append(obj_sequence, float(line_val[2]), float(line_val[3]))
 			exp_datas[1].append(obj_sequence, float(line_val[4]), float(line_val[5]))
 			exp_datas[2].append(obj_sequence, float(line_val[6]), float(line_val[7]))
@@ -571,7 +609,7 @@ if __name__ == '__main__':
 			diff_dH = pred_dH - exp_dH
 			diff_dS = pred_dS - exp_dS
 			diff_dG = pred_dG - exp_dG
-			freq = sequence.get_freq(parameter_types, base_pairs)
+			freq = sequence.get_freq(parameter_types, base_pair)
 			writer.writerow([name, seq, exp_dH, exp_dS, exp_dG, pred_dH, pred_dS, pred_dG, diff_dH, diff_dS, diff_dG] + [""] + [freq[parameter_type] for parameter_type in parameter_types])
 		writer.writerow([""])
 
