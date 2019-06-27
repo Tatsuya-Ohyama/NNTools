@@ -22,10 +22,32 @@ from classes.Sequence import Sequence
 
 
 # =============== variable =============== #
-VERSION = "1.2"
+VERSION = "1.3"
+TEMPLATE_PARAM = "template_ref_param.csv"
+TEMPLATE_SEQUENCE = "template_sequence.csv"
 
 
 # =============== function =============== #
+def make_template(flag_overwrite):
+	"""
+	create template files for ref_param.csv and ref_exp.csv
+	"""
+	if flag_overwrite == False:
+		check_overwrite(TEMPLATE_PARAM)
+	with open(TEMPLATE_PARAM, "w") as obj_output:
+		writer = csv.writer(obj_output)
+		writer.writerow(["Parameter", "dH", "dS", "dG"])
+	sys.stderr.write("{0} is created.\n".format(TEMPLATE_PARAM))
+
+	if flag_overwrite == False:
+		check_overwrite(TEMPLATE_SEQUENCE)
+	with open(TEMPLATE_SEQUENCE, "w") as obj_output:
+		writer = csv.writer(obj_output)
+		writer.writerow(["Label", "Sequence"])
+	sys.stderr.write("{0} is created.\n".format(TEMPLATE_SEQUENCE))
+
+
+
 def read_sequence_txt(input_file):
 	"""
 	read sequence from txt format file
@@ -36,6 +58,7 @@ def read_sequence_txt(input_file):
 	with open(args.file_sequence, "r") as obj_input:
 		sequence = "".join([line_val.strip() for line_val in obj_input.readlines()])
 	return sequence.upper()
+
 
 
 def read_sequence_genbank(input_file):
@@ -60,16 +83,21 @@ def read_sequence_genbank(input_file):
 # =============== main =============== #
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description = "NNscanTool.py - Program for searching stable area by nearest neighbor method", formatter_class=argparse.RawTextHelpFormatter)
-	sequence_group = parser.add_mutually_exclusive_group(required = True)
+	sequence_group = parser.add_mutually_exclusive_group(required = "--make-template" not in sys.argv)
 	sequence_group.add_argument("-s", dest = "file_sequence_txt", metavar = "SEQUENCE_FILE.txt", help = "sequence file of txt format")
 	sequence_group.add_argument("-g", dest = "file_sequence_gen", metavar = "SEQUENCE_FILE.gb", help = "sequence file of genbank format")
-	parser.add_argument("-p", dest = "file_parameter", metavar = "PARAMETER_FILE.csv", required = True, help = "input file for parameters")
+	parser.add_argument("-p", dest = "file_parameter", metavar = "PARAMETER_FILE.csv", required = "--make-template" not in sys.argv, help = "input file for parameters")
 	parser.add_argument("-b", dest = "block_length", metavar = "SEQUENCE_RANGE", type = int, help = "block length for sequence (Default: full length)")
-	parser.add_argument("-o", dest = "file_output", metavar = "OUTPUT_FILE.csv", required = True, help = "output file")
+	parser.add_argument("-o", dest = "file_output", metavar = "OUTPUT_FILE.csv", required = "--make-template" not in sys.argv, help = "output file")
 	parser.add_argument("-l", dest = "file_log", metavar = "LOG_FILE.log", help = "log file (if not specify, a log file with the same name as -o option is generated)")
 	parser.add_argument("--graph", dest = "file_graph", metavar = "GRAPH_BASE_NAME", help = "base name of graph (.png)")
 	parser.add_argument("-O", dest = "flag_overwrite", action = "store_true", default = False, help = "overwrite forcibly")
+	parser.add_argument("--make-template", dest = "flag_make_template", action = "store_true", default = False, help = "make template files ({0} and {1}) and exit".format(TEMPLATE_PARAM, TEMPLATE_SEQUENCE))
 	args = parser.parse_args()
+
+	if args.flag_make_template:
+		make_template(args.flag_overwrite)
+		sys.exit(0)
 
 	check_exist(args.file_parameter, 2)
 
