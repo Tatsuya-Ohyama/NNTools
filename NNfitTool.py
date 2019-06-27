@@ -27,13 +27,36 @@ from classes.DataGroup import DataGroup
 # =============== variable =============== #
 DEFAULT_PARAMETER_TYPES = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "re:^T/^A"]
 DEFAULT_BASE_PAIRS = {"A": "T", "G": "C", "C": "G", "T": "A"}
-VERSION = "6.3"
+VERSION = "6.4"
 parameter_types = DEFAULT_PARAMETER_TYPES
 base_pair = DEFAULT_BASE_PAIRS
 iteration = 0
+TEMPLATE_PARAM = "template_ref_param.csv"
+TEMPLATE_EXP = "template_exp.csv"
 
 
 # =============== function =============== #
+def make_template(flag_overwrite):
+	"""
+	create template files for ref_param.csv and ref_exp.csv
+	"""
+	if flag_overwrite == False:
+		check_overwrite(TEMPLATE_PARAM)
+	with open(TEMPLATE_PARAM, "w") as obj_output:
+		writer = csv.writer(obj_output)
+		writer.writerow(["Parameter", "dH", "dS", "dG", "", "dH (change)", "dS (change)", "dG (change)"])
+		writer.writerows([[param_type, 0.0, 0.0, 0.0, "", True, True, True] for param_type in DEFAULT_PARAMETER_TYPES])
+	sys.stderr.write("{0} is created.\n".format(TEMPLATE_PARAM))
+
+	if flag_overwrite == False:
+		check_overwrite(TEMPLATE_EXP)
+	with open(TEMPLATE_EXP, "w") as obj_output:
+		writer = csv.writer(obj_output)
+		writer.writerow(["Label", "Sequence", "dH", "dH (error)", "dS", "dS (error)", "dG", "dG (error)"])
+	sys.stderr.write("{0} is created.\n".format(TEMPLATE_EXP))
+
+
+
 def calculation_worker(parameter, exp_data, mode, increment, threshold_increment, verbose, error_sign = None):
 	# calculate parameter
 	# loop for energy type: dH, dS, and dG
@@ -206,11 +229,21 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description = "NNfitTool.py", formatter_class=argparse.RawTextHelpFormatter)
 	input_group = parser.add_argument_group("Input")
-	input_group.add_argument("-x", dest = "experiment_file", metavar = "EXP.csv", required = True, help = "sequence and experimental value file")
-	input_group.add_argument("-r", dest = "ref_param", metavar = "REF_PARAM.csv", help = "referenced parameter values")
+	input_group.add_argument("-x", dest = "experiment_file", metavar = "EXP.csv", required = "--make-template" not in sys.argv,
+	help = """sequence and experimental value file
+column: Label, Sequence, dH, dH(error), dS, dS(error), dG, and dG(error)
+""")
+	input_group.add_argument("-r", dest = "ref_param", metavar = "REF_PARAM.csv",
+	help = """referenced parameter values
+column: Parameter type, dH, dS, dG, space, dH(change flag), dS(change flag), and dG(change flag))
+Parameter type: AA/TT, GC/CG, or etc, and re: (regexp) and reg: (counted pattern by regexp)
+e.g., "re:^A/^T" and "re:^T/^A" (initial parameter for A/T (both specification require))
+e.g., "reg:.*?G.*?/.*?C.*?" (number of G/C pair parameter)
+e.g., "reg:./." (length parameter)
+""")
 
 	output_group = parser.add_argument_group("Output")
-	output_group.add_argument("-o", dest = "output_file", metavar = "OUTPUT.csv", required = True, help = "output file")
+	output_group.add_argument("-o", dest = "output_file", metavar = "OUTPUT.csv", required = "--make-template" not in sys.argv, help = "output file")
 	output_group.add_argument("-O", dest = "flag_overwrite", action = "store_true", default = False, help = "overwrite forcibly")
 
 	config_group = parser.add_argument_group("Config")
@@ -227,8 +260,13 @@ if __name__ == '__main__':
 	misc_group = parser.add_argument_group("Misc")
 	misc_group.add_argument("-t", dest = "thread", metavar = "THREAD", type = int, default = 1, help = "number of threads for parallel calculation (Default: 1)")
 	misc_group.add_argument("--verbose", "-v", dest = "verbose", action = "count", default = 0, help = "verbose (-v: display results / -vv: display calculation results)")
+	misc_group.add_argument("--make-template", dest = "flag_make_template", action = "store_true", default = False, help = "make template files ({0} and {1}) and exit".format(TEMPLATE_PARAM, TEMPLATE_EXP))
+
 	args = parser.parse_args()
 
+	if args.flag_make_template:
+		make_template(args.flag_overwrite)
+		sys.exit(0)
 
 	# calculate target
 	target_list = [0, 2]	# without dS

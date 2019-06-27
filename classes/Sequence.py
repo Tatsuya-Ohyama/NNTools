@@ -162,6 +162,17 @@ class Sequence:
 						# match sequence and complementary sequence
 						self._cache_freq[param] += 1
 
+				elif param.startswith("reg:"):
+					# regexp parameter for repeated
+					re_exps = param.replace("reg:", "").split("/")
+					flag_match = []
+					for regexp, sequence in zip(re_exps, ["".join(self._sequence), "".join(self._complement)]):
+						flag_match.append([x.span() for x in re.finditer(regexp, sequence)])
+
+					if flag_match[0] == flag_match[1]:
+						# match sequence and complementary sequence
+						self._cache_freq[param] = len(flag_match[0])
+
 				elif "/" not in param:
 					sys.stderr.write("ERROR: undefined parameter at get_freq() in Sequence class ({0}).\n".format(param))
 					sys.exit(1)
