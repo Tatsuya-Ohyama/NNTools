@@ -509,7 +509,7 @@ e.g., "reg:./." (length parameter)
 						)
 						parameters[exp_idx].update_parameter_error("all", new_parameter.get_parameter())
 
-	if not args.flag_separate:
+	if not args.flag_separate and exp_datas[0].get_flag_fitting() and exp_datas[1].get_flag_fitting():
 		# calculate dS: (dH - dG) / T * 1000
 		dS = {
 			parameter_type: [

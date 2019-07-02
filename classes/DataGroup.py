@@ -21,6 +21,7 @@ class DataGroup:
 		self._error = []
 		self._error_sign = []
 		self._base_pairs = {}
+		self._flag_fitting = None
 
 		# initiation
 		self.set_name(name)
@@ -125,6 +126,14 @@ class DataGroup:
 		return energy_data
 
 
+	def get_flag_fitting(self):
+		"""
+		return flag_fitting
+		@return flag_fitting
+		"""
+		return self._flag_fitting
+
+
 	def get_stat(self, obj_parameter, mode = None, deg = 1, error_sign = None):
 		"""
 		return statistics
@@ -133,22 +142,34 @@ class DataGroup:
 		@param deg:
 		@return statistics value or return [r, r2, slope, intercept, diff_abs, diff_mean, diff_std, diff_sum, diff_square] list when data_type is None
 		"""
-		if type(error_sign) != list:
-			error_sign = self._error_sign
-		x = np.array([self._energy[idx] + self._error[idx] * error_sign[idx] for idx in range(len(self._energy))])
-		y = np.array([sequence.get_energy(obj_parameter, self._base_pairs) for sequence in self._sequences])
-		result = [float(x) for x in np.polyfit(x, y, deg).tolist()]
-		if y[y == 0.0].shape[0] == len(self._sequences) or np.std(x) == 0.0 or np.std(y) == 0.0:
-			result.append(0.0)
-		else:
-			result.append(np.corrcoef(x, y)[0, 1])
+		if self._flag_fitting is None:
+			# first time
+			if len([v for v in self._energy if v == 0.0]) == len(self._energy):
+				# If all the values are 0.0, it can not be fitted and will not be calculated later
+				self._flag_fitting = False
+			else:
+				self._flag_fitting = True
 
-		result.append(result[-1] ** 2)
-		result.append(np.abs(x - y))
-		result.append(np.mean(x - y))
-		result.append(np.std(x - y))
-		result.append(np.sum(np.abs(x - y)))
-		result.append(np.sum((x - y) ** 2))
+		if self._flag_fitting:
+			if type(error_sign) != list:
+				error_sign = self._error_sign
+			x = np.array([self._energy[idx] + self._error[idx] * error_sign[idx] for idx in range(len(self._energy))])
+			y = np.array([sequence.get_energy(obj_parameter, self._base_pairs) for sequence in self._sequences])
+			result = [float(x) for x in np.polyfit(x, y, deg).tolist()]
+			if y[y == 0.0].shape[0] == len(self._sequences) or np.std(x) == 0.0 or np.std(y) == 0.0:
+				result.append(0.0)
+			else:
+				result.append(np.corrcoef(x, y)[0, 1])
+
+			result.append(result[-1] ** 2)
+			result.append(np.abs(x - y))
+			result.append(np.mean(x - y))
+			result.append(np.std(x - y))
+			result.append(np.sum(np.abs(x - y)))
+			result.append(np.sum((x - y) ** 2))
+
+		else:
+			result = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
 		if mode is None:
 			return result
