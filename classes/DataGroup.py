@@ -83,6 +83,12 @@ class DataGroup:
 		self._energy.append(exp_value)
 		self._error.append(exp_value_e)
 		self._error_sign.append(0)
+		if len([v for v in self._energy if v == 0.0]) == len(self._energy):
+			# If all the values are 0.0, it can not be fitted and will not be calculated later
+			self._flag_fitting = False
+		else:
+			self._flag_fitting = True
+
 		return self
 
 
@@ -142,14 +148,6 @@ class DataGroup:
 		@param deg:
 		@return statistics value or return [r, r2, slope, intercept, diff_abs, diff_mean, diff_std, diff_sum, diff_square] list when data_type is None
 		"""
-		if self._flag_fitting is None:
-			# first time
-			if len([v for v in self._energy if v == 0.0]) == len(self._energy):
-				# If all the values are 0.0, it can not be fitted and will not be calculated later
-				self._flag_fitting = False
-			else:
-				self._flag_fitting = True
-
 		if self._flag_fitting:
 			if type(error_sign) != list:
 				error_sign = self._error_sign
