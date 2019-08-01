@@ -276,7 +276,7 @@ e.g., "reg:./." (length parameter)
 	exp_label = ["dH", "dS", "dG"]
 	parameters = [Parameter().set_name(label) for label in exp_label]
 	parameters_init = []
-	directions = [[]] * len(exp_label)
+	directions = [[] for idx in range(len(exp_label))]
 
 	# loading reference parameter
 	if args.ref_param is not None:
