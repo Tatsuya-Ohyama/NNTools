@@ -27,7 +27,7 @@ from classes.DataGroup import DataGroup
 # =============== variable =============== #
 DEFAULT_PARAMETER_TYPES = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "re:^T/^A"]
 DEFAULT_BASE_PAIRS = {"A": "T", "G": "C", "C": "G", "T": "A"}
-VERSION = "6.4"
+VERSION = "6.7"
 parameter_types = DEFAULT_PARAMETER_TYPES
 base_pair = DEFAULT_BASE_PAIRS
 iteration = 0
@@ -44,8 +44,8 @@ def make_template(flag_overwrite):
 		check_overwrite(TEMPLATE_PARAM)
 	with open(TEMPLATE_PARAM, "w") as obj_output:
 		writer = csv.writer(obj_output)
-		writer.writerow(["Parameter", "dH", "dS", "dG", "", "dH (change)", "dS (change)", "dG (change)"])
-		writer.writerows([[param_type, 0.0, 0.0, 0.0, "", True, True, True] for param_type in DEFAULT_PARAMETER_TYPES])
+		writer.writerow(["Parameter", "dH", "dS", "dG", "", "dH (change)", "dS (change)", "dG (change)", "", "dH (Direction)", "dS (Direction)", "dG (Direction)"])
+		writer.writerows([[param_type, 0.0, 0.0, 0.0, "", True, True, True, "", "", "", ""] for param_type in DEFAULT_PARAMETER_TYPES])
 	sys.stderr.write("{0} is created.\n".format(TEMPLATE_PARAM))
 
 	if flag_overwrite == False:
@@ -57,7 +57,7 @@ def make_template(flag_overwrite):
 
 
 
-def calculation_worker(parameter, exp_data, mode, increment, threshold_increment, verbose, error_sign = None):
+def calculation_worker(parameter, exp_data, mode, increment, threshold_increment, direction, verbose, error_sign = None):
 	# calculate parameter
 	# loop for energy type: dH, dS, and dG
 	if 1 <= verbose:
@@ -66,7 +66,6 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 		print("_/" * 20)
 
 	parameters_opt = [copy.deepcopy(parameter).set_name(parameter_type) for parameter_type in parameter_types]
-	direction = [0] * len(parameter_types)
 
 	evaluation_val = [0.0] * len(parameter_types)
 	evaluation_prev = [0.0] * len(parameter_types)
@@ -160,7 +159,7 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 
 
 		if 2 <= verbose:
-			print("-" * 57)
+			print("-" * 62)
 			print("{0} at {1} steps (dt = {2}) of {3} times  Mode: {4}".format(exp_label[exp_idx], cnt_i, increment, iteration, mode))
 
 		# calculate diff statistic values between prev and present
@@ -181,21 +180,20 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 			parameter.set_name(exp_data.get_name())
 
 			if 2 <= verbose:
-				print("{0:^8} {1:^10} {2:^3} {3:^13} {4:^13} {5:^5}".format("Type", "Parameter", "Chg", "E=sum(x'-x)^2", "Diff e (Prev)", "Adopt"))
-				print("{0:-^8} {1:-^10} {2:-^3} {3:-^13} {4:-^13} {5:-^5}".format("", "", "", "", "", ""))
+				print("{0:^8} {1:^10} {2:^3} {3:^13} {4:^13} {5:^4} {6:^5}".format("Type", "Parameter", "Chg", "E=sum(x'-x)^2", "Diff e (Prev)", "Sign", "Adopt"))
+				print("{0:-^8} {1:-^10} {2:-^3} {3:-^13} {4:-^13} {5:-^4} {6:-^5}".format("", "", "", "", "", "", ""))
 				print("{0:<8} {1:>10} {2:^3} {3:>13.3f}".format("(Prev)", "", "", evaluation_prev[0]))
 				for i, (p, e1, e2, e_diff) in enumerate(zip(parameter_types, evaluation_prev, evaluation_val, evaluation_diff)):
 					if i == max_val_idx:
-						print("{0:<8} {1[0]:>10.3f} {2:^3} {3:>13.3f} {4:>13.3f} {5:^5}".format(p, parameter.get_parameter(p), str(parameter.is_change(p))[0], e2, e_diff, "O"))
+						print("{0:<8} {1[0]:>10.3f} {2:^3} {3:>13.3f} {4:>13.3f}  {5:>2}  {6:^5}".format(p, parameter.get_parameter(p), str(parameter.is_change(p))[0], e2, e_diff, direction[i], "O"))
 					else:
-						print("{0:<8} {1[0]:>10.3f} {2:^3} {3:>13.3f} {4:>13.3f}".format(p, parameter.get_parameter(p), str(parameter.is_change(p))[0], e2, e_diff))
+						print("{0:<8} {1[0]:>10.3f} {2:^3} {3:>13.3f} {4:>13.3f}  {5:>2}".format(p, parameter.get_parameter(p), str(parameter.is_change(p))[0], e2, e_diff, direction[i]))
 				print("")
 			evaluation_prev = [evaluation_val[max_val_idx] for parameter in parameter_types]
 
 		else:
 			# When all parameters were locked, unlock and change increment
 			increment /= 2
-			direction = [0 for x in parameter_types]
 
 	if 1 <= verbose:
 		print("")
@@ -278,6 +276,7 @@ e.g., "reg:./." (length parameter)
 	exp_label = ["dH", "dS", "dG"]
 	parameters = [Parameter().set_name(label) for label in exp_label]
 	parameters_init = []
+	directions = [[]] * len(exp_label)
 
 	# loading reference parameter
 	if args.ref_param is not None:
@@ -291,35 +290,22 @@ e.g., "reg:./." (length parameter)
 		pos_offset = 1
 		with open(args.ref_param, "r") as obj_input:
 			reader = csv.reader(obj_input)
-			for line_val in reader:
-				if "Parameter" in line_val[0]:
+			for row_val in reader:
+				if "Parameter" in row_val[0]:
 					# read from "Parameter" at col 1
 					flag_read = True
-					flag_init = True
 					continue
 
 				if flag_read:
-					if len(line_val) == 0 or line_val[0] == "":
+					if len(row_val) == 0 or row_val[0] == "":
 						# read stop by empty row
 						break
 
-					if flag_init:
-						pos_sep = line_val.index("")
-						if pos_sep == 4:
-							# without error
-							pos_offset = 1
-
-						elif pos_sep == 7:
-							pos_offset = 2
-						else:
-							sys.stderr.write("ERROR: undefined format for reference parameter file.\n")
-							sys.exit(1)
-						flag_init = False
-
-					parameter_types.append(line_val[0])
-					if "/" in line_val[0] and not line_val[0].startswith("init") and not line_val[0].startswith("length") and not line_val[0].startswith("symmetry") and not line_val[0].startswith("re:"):
+					parameter_types.append(row_val[0])
+					row_val = [val for val in row_val if val != ""]
+					if "/" in row_val[0] and not row_val[0].startswith("init") and not row_val[0].startswith("length") and not row_val[0].startswith("symmetry") and not row_val[0].startswith("re:"):
 						# lexical analysis for parameter label to base pair
-						bases = line_val[0].split("/", 2)
+						bases = row_val[0].split("/", 2)
 						tmp_base_pair = {}
 						tmp_base_pair[bases[0][0:1]] = bases[1][0:1]
 						tmp_base_pair[bases[0][1:2]] = bases[1][1:2]
@@ -331,18 +317,29 @@ e.g., "reg:./." (length parameter)
 							else:
 								base_pair[k] = v
 
-					parameters[0].append_parameter(line_val[0], float(line_val[pos_sep - pos_offset * 3]))
-					parameters[1].append_parameter(line_val[0], float(line_val[pos_sep - pos_offset * 2]))
-					parameters[2].append_parameter(line_val[0], float(line_val[pos_sep - pos_offset * 1]))
-					if len(line_val) == 8:
-						# format with error
-						line_val[5:8] = [True if x.capitalize() == "True" else False for x in line_val[5:8]]
-					elif len(line_val) == 11:
-						# format without error
-						line_val[8:11] = [True if x.capitalize() == "True" else False for x in line_val[8:11]]
-					parameters[0].set_change_stat(line_val[0], line_val[pos_sep + 1])
-					parameters[1].set_change_stat(line_val[0], line_val[pos_sep + 2])
-					parameters[2].set_change_stat(line_val[0], line_val[pos_sep + 3])
+					parameters[0].append_parameter(row_val[0], float(row_val[1]))
+					parameters[1].append_parameter(row_val[0], float(row_val[2]))
+					parameters[2].append_parameter(row_val[0], float(row_val[3]))
+					if 7 <= len(row_val):
+						# change flag
+						row_val[4:7] = [True if x.capitalize() == "True" else False for x in row_val[4:7]]
+						parameters[0].set_change_stat(row_val[0], row_val[4])
+						parameters[1].set_change_stat(row_val[0], row_val[5])
+						parameters[2].set_change_stat(row_val[0], row_val[6])
+					else:
+						parameters[0].set_change_stat(row_val[0], True)
+						parameters[1].set_change_stat(row_val[0], True)
+						parameters[2].set_change_stat(row_val[0], True)
+
+					if len(row_val) == 10:
+						directions[0].append(float(row_val[7]))
+						directions[1].append(float(row_val[8]))
+						directions[2].append(float(row_val[9]))
+					else:
+						directions[0].append(0)
+						directions[1].append(0)
+						directions[2].append(0)
+
 	else:
 		# define starting parameter by defualt value
 		for parameter in parameters:
@@ -390,6 +387,7 @@ e.g., "reg:./." (length parameter)
 					args.mode,
 					args.initial_increment,
 					args.threshold_increment,
+					directions[exp_idx],
 					0
 				) for exp_idx in target_list])
 			if args.flag_separate:
@@ -407,6 +405,7 @@ e.g., "reg:./." (length parameter)
 					args.mode,
 					args.initial_increment,
 					args.threshold_increment,
+					directions[exp_idx],
 					args.verbose
 				)
 
@@ -425,6 +424,7 @@ e.g., "reg:./." (length parameter)
 						args.mode,
 						args.initial_increment,
 						args.threshold_increment,
+						directions[exp_idx],
 						0,
 						sign
 					) for exp_idx in target_list
@@ -442,6 +442,7 @@ e.g., "reg:./." (length parameter)
 							args.mode,
 							args.initial_increment,
 							args.threshold_increment,
+							directions[exp_idx],
 							args.verbose,
 							sign
 						))
@@ -470,6 +471,7 @@ e.g., "reg:./." (length parameter)
 									args.mode,
 									args.initial_increment,
 									args.threshold_increment,
+									directions[exp_idx],
 									0,
 									exp_error_pattern
 								) for error_pattern in calc_set
@@ -487,6 +489,7 @@ e.g., "reg:./." (length parameter)
 								args.mode,
 								args.initial_increment,
 								args.threshold_increment,
+								directions[exp_idx],
 								0,
 								exp_error_pattern
 							) for error_pattern in calc_set
@@ -504,6 +507,7 @@ e.g., "reg:./." (length parameter)
 							args.mode,
 							args.initial_increment,
 							args.threshold_increment,
+							directions[exp_idx],
 							args.verbose,
 							exp_error_pattern
 						)
@@ -539,8 +543,8 @@ e.g., "reg:./." (length parameter)
 		writer.writerow(["Evaluation mode", args.mode])
 		writer.writerow([""])
 
-		writer.writerow(["Initial parameter", "dH", "dS", "dG", "", "Change (dH)", "Change (dS)", "Change (dG)"])
-		for parameter_type in parameter_types:
+		writer.writerow(["Initial parameter", "dH", "dS", "dG", "", "Change (dH)", "Change (dS)", "Change (dG)", "", "Direction (dH)", "Direction (dS)", "Direction (dG)"])
+		for idx, parameter_type in enumerate(parameter_types):
 			parameter_dH = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters_init[0].get_parameter(data_type = "fix")[parameter_type]]
 			parameter_dS = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters_init[1].get_parameter(data_type = "fix")[parameter_type]]
 			parameter_dG = [Decimal(str(x)).quantize(Decimal('0.001'), rounding = ROUND_HALF_UP) for x in parameters_init[2].get_parameter(data_type = "fix")[parameter_type]]
@@ -553,7 +557,11 @@ e.g., "reg:./." (length parameter)
 				"",
 				parameters_init[0].is_change(parameter_type),
 				parameters_init[1].is_change(parameter_type),
-				parameters_init[2].is_change(parameter_type)
+				parameters_init[2].is_change(parameter_type),
+				"",
+				directions[0][idx],
+				directions[1][idx],
+				directions[2][idx]
 				])
 		writer.writerow([""])
 		writer.writerow([""])
