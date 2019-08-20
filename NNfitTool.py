@@ -27,7 +27,7 @@ from classes.DataGroup import DataGroup
 # =============== variable =============== #
 DEFAULT_PARAMETER_TYPES = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "re:^T/^A"]
 DEFAULT_BASE_PAIRS = {"A": "T", "G": "C", "C": "G", "T": "A"}
-VERSION = "6.7"
+VERSION = "6.8"
 parameter_types = DEFAULT_PARAMETER_TYPES
 base_pair = DEFAULT_BASE_PAIRS
 iteration = 0
@@ -45,7 +45,7 @@ def make_template(flag_overwrite):
 	with open(TEMPLATE_PARAM, "w") as obj_output:
 		writer = csv.writer(obj_output)
 		writer.writerow(["Parameter", "dH", "dS", "dG", "", "dH (change)", "dS (change)", "dG (change)", "", "dH (Direction)", "dS (Direction)", "dG (Direction)"])
-		writer.writerows([[param_type, 0.0, 0.0, 0.0, "", True, True, True, "", "", "", ""] for param_type in DEFAULT_PARAMETER_TYPES])
+		writer.writerows([[param_type, 0.0, 0.0, 0.0, "", True, True, True, "", 0, 0, 0] for param_type in DEFAULT_PARAMETER_TYPES])
 	sys.stderr.write("{0} is created.\n".format(TEMPLATE_PARAM))
 
 	if flag_overwrite == False:
