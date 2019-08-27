@@ -15,7 +15,6 @@ import copy
 import itertools
 from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_EVEN
 from joblib import Parallel, delayed
-from pprint import pprint
 from decimal import Decimal
 
 from basic_func import check_exist, check_overwrite
@@ -27,7 +26,7 @@ from classes.DataGroup import DataGroup
 # =============== variable =============== #
 DEFAULT_PARAMETER_TYPES = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "re:^T/^A"]
 DEFAULT_BASE_PAIRS = {"A": "T", "G": "C", "C": "G", "T": "A"}
-VERSION = "6.8"
+VERSION = "6.9"
 parameter_types = DEFAULT_PARAMETER_TYPES
 base_pair = DEFAULT_BASE_PAIRS
 iteration = 0
@@ -45,7 +44,7 @@ def make_template(flag_overwrite):
 	with open(TEMPLATE_PARAM, "w") as obj_output:
 		writer = csv.writer(obj_output)
 		writer.writerow(["Parameter", "dH", "dS", "dG", "", "dH (change)", "dS (change)", "dG (change)", "", "dH (Direction)", "dS (Direction)", "dG (Direction)"])
-		writer.writerows([[param_type, 0.0, 0.0, 0.0, "", True, True, True, "", 0, 0, 0] for param_type in DEFAULT_PARAMETER_TYPES])
+		writer.writerows([[param_type, 0.0, 0.0, 0.0, "", True, True, True, "", "", "", ""] for param_type in DEFAULT_PARAMETER_TYPES])
 	sys.stderr.write("{0} is created.\n".format(TEMPLATE_PARAM))
 
 	if flag_overwrite == False:
@@ -57,9 +56,10 @@ def make_template(flag_overwrite):
 
 
 
-def calculation_worker(parameter, exp_data, mode, increment, threshold_increment, direction, verbose, error_sign = None):
+def calculation_worker(parameter, exp_data, mode, increment, threshold_increment, init_direction, verbose, error_sign = None):
 	# calculate parameter
 	# loop for energy type: dH, dS, and dG
+	direction = copy.deepcopy(init_direction)
 	if 1 <= verbose:
 		print("_/" * 20)
 		print("{0:^40}".format("Fitting {0}".format(exp_data.get_name())))
@@ -177,7 +177,7 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 			for parameter in parameters_opt:
 				parameter.set_parameter(new_parameter_type, copy.deepcopy(new_parameter_val))
 			parameter = parameters_opt[max_val_idx]
-			parameter.set_name(exp_data.get_name())
+			parameter.set_name(exp_data.name)
 
 			if 2 <= verbose:
 				print("{0:^8} {1:^10} {2:^3} {3:^13} {4:^13} {5:^4} {6:^5}".format("Type", "Parameter", "Chg", "E=sum(x'-x)^2", "Diff e (Prev)", "Sign", "Adopt"))
@@ -194,6 +194,7 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 		else:
 			# When all parameters were locked, unlock and change increment
 			increment /= 2
+			direction = copy.deepcopy(init_direction)
 
 	if 1 <= verbose:
 		print("")
@@ -207,6 +208,8 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 		print("===== Comparing experimental data =====")
 		print("{0:^20} {1:^8} {2:^8} {3:^8}".format("Sequence", "Exp.", "Predict", "Diff"))
 		print("{0:-^20} {1:-^8} {2:-^8} {3:-^8}".format("", "", "", ""))
+		print(exp_data.get_energy(True, [parameters[2]]))
+		print(exp_data.get_stat(parameters[2], "diff_abs"))
 		for row, diff in zip(exp_data.get_energy(True, [parameters[2]]), exp_data.get_stat(parameters[2], "diff_abs")):
 			print("{0:<20} {1:>8.3f} {2:>8.3f} {3:>8.3f}".format(row[0], row[1], row[2], diff))
 
@@ -415,6 +418,7 @@ e.g., "reg:./." (length parameter)
 			negative = [1 for x in range(len(exp_datas[0].get_sequence()))]
 			positive = [-1 for x in range(len(exp_datas[0].get_sequence()))]
 			new_parameters = []
+
 			if args.thread is not None:
 				# multi-thread
 				new_parameters = Parallel(n_jobs = args.thread)([
@@ -513,7 +517,7 @@ e.g., "reg:./." (length parameter)
 						)
 						parameters[exp_idx].update_parameter_error("all", new_parameter.get_parameter())
 
-	if not args.flag_separate and exp_datas[0].get_flag_fitting() and exp_datas[1].get_flag_fitting():
+	if not args.flag_separate and exp_datas[0].is_fitting and exp_datas[1].is_fitting:
 		# calculate dS: (dH - dG) / T * 1000
 		dS = {
 			parameter_type: [
