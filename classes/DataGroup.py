@@ -15,16 +15,13 @@ class DataGroup:
 		@param name: this object name
 		"""
 		# member variables
-		self._name = ""
+		self._name = name
 		self._sequences = []
 		self._energy = []
 		self._error = []
 		self._error_sign = []
 		self._base_pairs = {}
-		self._flag_fitting = None
-
-		# initiation
-		self.set_name(name)
+		self._is_fitting = None
 
 
 	def save_pickle(self, output_file):
@@ -62,6 +59,24 @@ class DataGroup:
 		return self
 
 
+	@property
+	def name(self):
+		"""
+		return data name
+		@return name
+		"""
+		return self._name
+
+
+	@name.setter
+	def name(self, name):
+		"""
+		set name
+		@param name: data name
+		"""
+		self._name = name
+
+
 	def set_base_pair(self, base_pairs):
 		"""
 		set base pair information
@@ -85,19 +100,11 @@ class DataGroup:
 		self._error_sign.append(0)
 		if len([v for v in self._energy if v == 0.0]) == len(self._energy):
 			# If all the values are 0.0, it can not be fitted and will not be calculated later
-			self._flag_fitting = False
+			self._is_fitting = False
 		else:
-			self._flag_fitting = True
+			self._is_fitting = True
 
 		return self
-
-
-	def get_name(self):
-		"""
-		return data name
-		@return name
-		"""
-		return self._name
 
 
 	def get_sequence(self, data_type = None):
@@ -132,12 +139,13 @@ class DataGroup:
 		return energy_data
 
 
-	def get_flag_fitting(self):
+	@property
+	def is_fitting(self):
 		"""
 		return flag_fitting
 		@return flag_fitting
 		"""
-		return self._flag_fitting
+		return self._is_fitting
 
 
 	def get_stat(self, obj_parameter, mode = None, deg = 1, error_sign = None):
@@ -145,10 +153,11 @@ class DataGroup:
 		return statistics
 		@param mode: None, "r", "r2", "slope", "intercept", "diff_abs", "diff_mean", "diff_std", "diff_sum, diff_square" (Default: None)
 		@param obj_parameter: degree of the fitting polynomial (Default: 1)
-		@param deg:
+		@param deg(int): dimension for curve fitting
+		@param error_sign(list): sign for error (if sign is given, returned value contain positive or negative error)
 		@return statistics value or return [r, r2, slope, intercept, diff_abs, diff_mean, diff_std, diff_sum, diff_square] list when data_type is None
 		"""
-		if self._flag_fitting:
+		if self._is_fitting:
 			if type(error_sign) != list:
 				error_sign = self._error_sign
 			x = np.array([self._energy[idx] + self._error[idx] * error_sign[idx] for idx in range(len(self._energy))])
