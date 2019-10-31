@@ -51,6 +51,9 @@ if __name__ == '__main__':
 				parameters = [Parameter().set_name(line_val[i]) for i in range(1, len(line_val))]
 				continue
 
+			if len(line_val[0]) == 0:
+				break
+
 			if flag_read:
 				if "/" in line_val[0] and not line_val[0].startswith("init") and not line_val[0].startswith("length") and not line_val[0].startswith("symmetry") and not line_val[0].startswith("re:"):
 					# generate base_pair
