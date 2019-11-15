@@ -294,7 +294,7 @@ e.g., "reg:./." (length parameter)
 		with open(args.ref_param, "r") as obj_input:
 			reader = csv.reader(obj_input)
 			for row_val in reader:
-				if "Parameter" in row_val[0]:
+				if "Parameter" in row_val[0] or "parameter" in row_val[0]:
 					# read from "Parameter" at col 1
 					flag_read = True
 					continue
