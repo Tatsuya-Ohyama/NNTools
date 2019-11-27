@@ -119,28 +119,27 @@ if __name__ == '__main__':
 				sequences.append(Sequence(line_val[0]).set_sequence(line_val[1], base_pair))
 
 	# output
-	file_log = args.file_log
-	if file_log is None:
+	if args.file_log is not None:
 		path = os.path.splitext(args.file_output)
-		file_log = path[0] + ".log"
+		args.file_log = path[0] + ".log"
 
-	if args.flag_overwrite == False:
-		check_overwrite(args.file_output)
-		check_overwrite(file_log)
+		if args.flag_overwrite == False:
+			check_overwrite(args.file_output)
+			check_overwrite(args.file_log)
 
-	with open(file_log, "w") as obj_output:
-		obj_output.write("This log file was generated at " + datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S") + "\n\n")
-		obj_output.write("<< Input >>\n")
-		obj_output.write("Program version: {0}\n".format(VERSION))
-		obj_output.write("Sequence file: {0} ({1} sequences)\n".format(args.file_sequence, len(sequences)))
-		obj_output.write("Parameter file: {0}\n".format(args.file_parameter))
-		obj_output.write("|{0:^15}|{1[0]:^8}|{1[1]:^8}|{1[2]:^8}|\n".format("", [param.get_name() for param in parameters]))
-		obj_output.write("|{0:-^15}|{0:-^8}|{0:-^8}|{0:-^8}|\n".format(""))
-		for parameter_type in parameters[0].get_parameter(data_type = "name"):
-			obj_output.write("|{0:^15}|{1[0]:>8.3f}|{1[1]:>8.3f}|{1[2]:>8.3f}|\n".format(parameter_type, [param.get_parameter(parameter_type)[0] for param in parameters]))
-		obj_output.write("\n")
-		obj_output.write("Output file: {0}\n".format(args.file_output))
-		obj_output.write("\n")
+		with open(args.file_log, "w") as obj_output:
+			obj_output.write("This log file was generated at " + datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S") + "\n\n")
+			obj_output.write("<< Input >>\n")
+			obj_output.write("Program version: {0}\n".format(VERSION))
+			obj_output.write("Sequence file: {0} ({1} sequences)\n".format(args.file_sequence, len(sequences)))
+			obj_output.write("Parameter file: {0}\n".format(args.file_parameter))
+			obj_output.write("|{0:^15}|{1[0]:^8}|{1[1]:^8}|{1[2]:^8}|\n".format("", [param.get_name() for param in parameters]))
+			obj_output.write("|{0:-^15}|{0:-^8}|{0:-^8}|{0:-^8}|\n".format(""))
+			for parameter_type in parameters[0].get_parameter(data_type = "name"):
+				obj_output.write("|{0:^15}|{1[0]:>8.3f}|{1[1]:>8.3f}|{1[2]:>8.3f}|\n".format(parameter_type, [param.get_parameter(parameter_type)[0] for param in parameters]))
+			obj_output.write("\n")
+			obj_output.write("Output file: {0}\n".format(args.file_output))
+			obj_output.write("\n")
 
 	with open(args.file_output, "w") as obj_output:
 		writer = csv.writer(obj_output)
