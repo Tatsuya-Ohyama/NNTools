@@ -85,7 +85,7 @@ if __name__ == '__main__':
 		reader = csv.reader(obj_input)
 		flag_read = False
 		for line_val in reader:
-			if "Sequence" in line_val:
+			if "Sequence" in line_val or "Sequences" in line_val:
 				flag_read = True
 				continue
 
