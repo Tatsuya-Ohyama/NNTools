@@ -5,7 +5,7 @@ import sys
 import pickle
 import re
 
-from classes.Parameter import Parameter
+from classes.parameter import Parameter
 
 
 # =============== class =============== #
