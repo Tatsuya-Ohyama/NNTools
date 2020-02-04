@@ -17,10 +17,10 @@ from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_EVEN
 from joblib import Parallel, delayed
 from decimal import Decimal
 
-from basic_func import check_exist, check_overwrite
-from classes.Parameter import Parameter
-from classes.Sequence import Sequence
-from classes.DataGroup import DataGroup
+from classes.basicfunc import check_exist, check_overwrite
+from classes.parameter import Parameter
+from classes.sequence import Sequence
+from classes.datagroup import DataGroup
 
 
 # =============== variable =============== #
