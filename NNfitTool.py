@@ -37,7 +37,10 @@ TEMPLATE_EXP = "template_exp.csv"
 # =============== function =============== #
 def make_template(flag_overwrite):
 	"""
-	create template files for ref_param.csv and ref_exp.csv
+	function to create template files for ref_param.csv and ref_exp.csv
+
+	Args:
+		flag_overwrite (bool): overwrite flag
 	"""
 	if flag_overwrite == False:
 		check_overwrite(TEMPLATE_PARAM)
@@ -306,7 +309,10 @@ e.g., "reg:./." (length parameter)
 
 					parameter_types.append(row_val[0])
 					row_val = [val for val in row_val if val != ""]
-					if "/" in row_val[0] and not row_val[0].startswith("init") and not row_val[0].startswith("length") and not row_val[0].startswith("symmetry") and not row_val[0].startswith("re:"):
+					if "/" in row_val[0] and not row_val[0].startswith("init") \
+					and not row_val[0].startswith("length") \
+					and not row_val[0].startswith("symmetry") \
+					and not row_val[0].startswith("re:"):
 						# lexical analysis for parameter label to base pair
 						bases = row_val[0].split("/", 2)
 						tmp_base_pair = {}
