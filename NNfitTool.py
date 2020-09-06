@@ -65,7 +65,7 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 	direction = copy.deepcopy(init_direction)
 	if 1 <= verbose:
 		print("_/" * 20)
-		print("{0:^40}".format("Fitting {0}".format(exp_data.get_name())))
+		print("{0:^40}".format("Fitting {0}".format(exp_data.name)))
 		print("_/" * 20)
 
 	parameters_opt = [copy.deepcopy(parameter).set_name(parameter_type) for parameter_type in parameter_types]
