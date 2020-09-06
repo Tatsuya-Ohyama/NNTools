@@ -16,9 +16,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 
-from basic_func import check_exist, check_overwrite
-from classes.Parameter import Parameter
-from classes.Sequence import Sequence
+from classes.basicfunc import check_exist, check_overwrite
+from classes.parameter import Parameter
+from classes.sequence import Sequence
 
 
 # =============== variable =============== #

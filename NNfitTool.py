@@ -17,10 +17,10 @@ from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_EVEN
 from joblib import Parallel, delayed
 from decimal import Decimal
 
-from basic_func import check_exist, check_overwrite
-from classes.Parameter import Parameter
-from classes.Sequence import Sequence
-from classes.DataGroup import DataGroup
+from classes.basicfunc import check_exist, check_overwrite
+from classes.parameter import Parameter
+from classes.sequence import Sequence
+from classes.datagroup import DataGroup
 
 
 # =============== variable =============== #
@@ -37,7 +37,10 @@ TEMPLATE_EXP = "template_exp.csv"
 # =============== function =============== #
 def make_template(flag_overwrite):
 	"""
-	create template files for ref_param.csv and ref_exp.csv
+	function to create template files for ref_param.csv and ref_exp.csv
+
+	Args:
+		flag_overwrite (bool): overwrite flag
 	"""
 	if flag_overwrite == False:
 		check_overwrite(TEMPLATE_PARAM)
@@ -62,7 +65,7 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 	direction = copy.deepcopy(init_direction)
 	if 1 <= verbose:
 		print("_/" * 20)
-		print("{0:^40}".format("Fitting {0}".format(exp_data.get_name())))
+		print("{0:^40}".format("Fitting {0}".format(exp_data.name)))
 		print("_/" * 20)
 
 	parameters_opt = [copy.deepcopy(parameter).set_name(parameter_type) for parameter_type in parameter_types]
@@ -306,7 +309,10 @@ e.g., "reg:./." (length parameter)
 
 					parameter_types.append(row_val[0])
 					row_val = [val for val in row_val if val != ""]
-					if "/" in row_val[0] and not row_val[0].startswith("init") and not row_val[0].startswith("length") and not row_val[0].startswith("symmetry") and not row_val[0].startswith("re:"):
+					if "/" in row_val[0] and not row_val[0].startswith("init") \
+					and not row_val[0].startswith("length") \
+					and not row_val[0].startswith("symmetry") \
+					and not row_val[0].startswith("re:"):
 						# lexical analysis for parameter label to base pair
 						bases = row_val[0].split("/", 2)
 						tmp_base_pair = {}
