@@ -12,7 +12,6 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 import argparse
 import os
 import csv
-import copy
 
 from basic_func import check_exist, check_overwrite
 
@@ -40,7 +39,7 @@ if __name__ == '__main__':
 	digit = len(str(len(values)))
 	output_prefix = os.path.splitext(args.INPUT_FILE)[0]
 	output_format = output_prefix + "_wo_{0:0" + str(digit) + "}.csv"
-	for i in range(len(values[1:])):
+	for i in range(len(values)):
 		output_file = output_format.format(i + 1)
 
 		if args.FLAG_OVERWRITE == False:
@@ -49,8 +48,6 @@ if __name__ == '__main__':
 		with open(output_file, "w") as obj_output:
 			writer = csv.writer(obj_output)
 			writer.writerow(label)
-			tmp_values = copy.deepcopy(values)
-			del(tmp_values[i])
-			writer.writerows(tmp_values)
+			writer.writerows(values[0 : i] + values[i + 1:])
 
 		sys.stderr.write("Create: {0}\n".format(output_file))
