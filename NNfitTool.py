@@ -26,7 +26,7 @@ from classes.datagroup import DataGroup
 # =============== variable =============== #
 DEFAULT_PARAMETER_TYPES = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "re:^T/^A"]
 DEFAULT_BASE_PAIRS = {"A": "T", "G": "C", "C": "G", "T": "A"}
-VERSION = "6.9"
+VERSION = "6.17"
 parameter_types = DEFAULT_PARAMETER_TYPES
 base_pair = DEFAULT_BASE_PAIRS
 iteration = 0
@@ -297,7 +297,7 @@ e.g., "reg:./." (length parameter)
 		with open(args.ref_param, "r") as obj_input:
 			reader = csv.reader(obj_input)
 			for row_val in reader:
-				if "Parameter" in row_val[0]:
+				if row_val[0].lower() == "parameter":
 					# read from "Parameter" at col 1
 					flag_read = True
 					continue
