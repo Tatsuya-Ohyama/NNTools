@@ -195,7 +195,8 @@ class Parameter:
 			values = self._parameters
 		elif data_type == "fix":
 			error = {k: abs(v[1] - v[2]) / 2 for k, v in self._parameters.items()}
-			values = {k: [v[1] + error[k], error[k]] for k, v in self._parameters.items()}
+			min_val = [min(v[1:]) for v in self._parameters.values()]
+			values = {k: [m + error[k], error[k]] for m, (k, v) in zip(min_val, self._parameters.items())}
 		elif data_type == "name":
 			return self._parameters.keys()
 		else:
