@@ -89,7 +89,7 @@ if __name__ == '__main__':
 					for k, v in tmp_base_pair.items():
 						if k in base_pair.keys():
 							if base_pair[k] != v:
-								sys.stderr.write("ERROR: base pair are duplicated: {0}-{1} vs {0}-{2}.\n".format(k, base_pair[k], tmp_base_pair[k]))
+								sys.stderr.write("ERROR: base pair is duplicated: {0}-{1} vs {0}-{2}.\n".format(k, base_pair[k], tmp_base_pair[k]))
 								sys.exit(1)
 						else:
 							base_pair[k] = v
