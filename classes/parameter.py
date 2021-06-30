@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import pickle
 import copy
+
 
 
 # =============== class =============== #
@@ -16,35 +16,28 @@ class Parameter:
 		self._change = {}
 
 
-	def save_pickle(self, output_file):
-		"""
-		save to pickle
-		@param output_file: output pickle file path
-		@return self (for chain method)
-		"""
-		with open(output_file, "wb") as obj_output:
-			pickle.dump(self, obj_output)
-			sys.stderr.write("INFO: save pickle file to '{0}'\n".format(output_file))
-		return self
+	@property
+	def name(self):
+		return self._name
 
+	@property
+	def parameters(self):
+		return self._parameters
 
-	def restore_pickle(self, input_file):
-		"""
-		restore from pickle
-		@param input_file: pickle file path
-		@return self (for chain method)
-		"""
-		with open(input_file, "rb") as obj_input:
-			self = pickle.load(obj_input)
-			sys.stderr.write("INFO: restore object from pickle file '{0}'\n".format(input_file))
-		return self
+	@property
+	def change(self):
+		return self._change
 
 
 	def set_name(self, name):
 		"""
-		set name
-		@param name: name
-		@return self
+		Method to set parameter name
+
+		Args:
+			name (str): parameter name
+
+		Returns:
+			self
 		"""
 		self._name = name
 		return self
@@ -52,22 +45,30 @@ class Parameter:
 
 	def append_parameter(self, parameter_type, parameter_val):
 		"""
-		append parameter with error method
-		@param parameter_type: parameter name ("AA/TT", "AT/TA", ..., "init_XX", "symmetry", or "5term_TA (by regexp)")
-		@param parameter_val: parameter value list ([parameter, minimum parameter with error, maximum value with error] or parameter)
-		@return self
+		Method to append parameter with error
+
+		Args:
+			parameter_type (str): parameter name ("AA/TT", "AT/TA", ..., "init_XX", "symmetry", or "5term_TA (by regexp)")
+			parameter_val (list): [param(float), param_min(float), param_max(float)]
+
+		Returns:
+			self
 		"""
 		self._parameters[parameter_type] = [parameter_val for x in range(3)]
 		self._change[parameter_type] = True
 		return self
 
 
-	def set_parameter(self, parameter_type, parameter_val = None):
+	def set_parameter(self, parameter_type, parameter_val=None):
 		"""
-		set parameter with error method
-		@param parameter_type: parameter name (all, "AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", or "5term_TA (by regexp)")
-		@param parameter_val: parameter value ([parameter, minimum parameter with error, maximum value with error] or parameter)
-		@return self
+		Method to set parameter with error
+
+		Args:
+			parameter_type (str): parameter name (all, "AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", or "5term_TA (by regexp)")
+			parameter_val (float, optional): [param(float), param_min(float), param_max(float)] (Default: None)
+
+		Returns:
+			self
 		"""
 		if parameter_type == "all":
 			# All data are received without modification
@@ -94,10 +95,14 @@ class Parameter:
 
 	def update_parameter_error(self, parameter_type, parameter_value):
 		"""
-		calculate and set error method
-		@param parameter_type: parameter type or "all"
-		@param parameter_value: parameter value for one parameter type or parameter value list for "all"
-		@return self
+		Method to calculate and set error
+
+		Args:
+			parameter_type (str): parameter name or "all"
+			parameter_value (float or list): parameter value(float) for one parameter type or [param(float), param_min(float), param_max(float)] for "all"
+
+		Returns:
+			self
 		"""
 		parameter_types = []
 		parameter_values = []
@@ -126,10 +131,14 @@ class Parameter:
 
 	def set_change_stat(self, parameter_type, state):
 		"""
-		change state for changing parameter
-		@param parameter_type: parameter type or "all"
-		@param state: True or False
-		@return self
+		Method to change state for changing parameter
+
+		Args:
+			parameter_type (str): parameter type or "all"
+			state (bool): True or False
+
+		Returns:
+			self
 		"""
 		if parameter_type == "all":
 			self._change = {k: state for k in self._change.keys()}
@@ -140,9 +149,13 @@ class Parameter:
 
 	def remove_parameter(self, parameter_name):
 		"""
-		remove parameter
-		@param parameter_name: parameter name
-		@return self
+		Method to remove parameter
+
+		Args:
+			parameter_name (str): parameter name
+
+		Returns:
+			self
 		"""
 		if parameter_name in self._parameters.keys():
 			del(self._parameters[parameter_name])
@@ -154,25 +167,23 @@ class Parameter:
 
 	def clone(self):
 		"""
-		return clone(self)
-		@return self
+		Method to return clone parameter set
+
+		Returns:
+			obj_Parameter
 		"""
 		return copy.deepcopy(self)
 
 
-	def get_name(self):
+	def is_change(self, parameter_type=None):
 		"""
-		return name
-		@return name
-		"""
-		return self._name
+		Method to return change state
 
+		Args:
+			parameter_type (str, optional): None or parameter type (Default: None)
 
-	def is_change(self, parameter_type = None):
-		"""
-		return change state
-		@param parameter_type: None or parameter type
-		@return change state list for None, or boolean type value for parameter type
+		Returns:
+			list for None or bool for parameter type
 		"""
 		if parameter_type is None:
 			return self._change
@@ -183,12 +194,22 @@ class Parameter:
 			sys.exit(1)
 
 
-	def get_parameter(self, parameter_type = None, data_type = "raw"):
 		"""
 		return parameter
 		@param parameter_type: parameter type
 		@param data_type: raw ([value, minimum value with error, maximum value with error]) or fix (value, error+/-)
 		@return parameter (list for None(all) or float value for each parameter)
+		"""
+	def get_parameter(self, parameter_type=None, data_type="raw"):
+		"""
+		Method to return parameter
+
+		Args:
+			parameter_type (str, optional): parameter type (Default: None)
+			data_type (str, optional): raw ([value, minimum value with error, maximum value with error]) or fix (value, error+/-) (Default: "raw")
+
+		Returns:
+			list for None(all) or float value for each parameter
 		"""
 		values = {}
 		if data_type == "raw":
@@ -216,9 +237,3 @@ class Parameter:
 				# all parameters are specified
 				sys.stderr.write("ERROR: undefined parameter_type in get_parameter() in Parameter class ({0}).\n".format(parameter_type))
 				sys.exit(1)
-
-
-
-# =============== main =============== #
-# if __name__ == '__main__':
-# 	main()

@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import pickle
 import re
 
 from classes.parameter import Parameter
+
 
 
 # =============== class =============== #
@@ -22,41 +22,28 @@ class Sequence:
 		self._cache_base_pairs = {}
 		self._cache_freq = {}
 
-
 		# initiation
 		self.set_name(name)
 
 
-	def save_pickle(self, output_file):
-		"""
-		save to pickle
-		@param output_file: output pickle file path
-		@return self (for chain method)
-		"""
-		with open(output_file, "wb") as obj_output:
-			pickle.dump(self, obj_output)
-			sys.stderr.write("INFO: save pickle file to '{0}'\n".format(output_file))
-		return self
+	@property
+	def name(self):
+		return self._name
 
-
-	def restore_pickle(self, input_file):
-		"""
-		restore from pickle
-		@param input_file: pickle file path
-		@return self (for chain method)
-		@return self (for chain method)
-		"""
-		with open(input_file, "rb") as obj_input:
-			self = pickle.load(obj_input)
-			sys.stderr.write("INFO: restore object from pickle file '{0}'\n".format(input_file))
-		return self
+	@property
+	def is_complement(self):
+		return self._is_self_complement
 
 
 	def set_name(self, name):
 		"""
-		set name
-		@param name: name
-		@return self
+		Method to set name
+
+		Args:
+			name (str): name
+
+		Returns:
+			self
 		"""
 		self._name = name
 		return self
@@ -64,10 +51,14 @@ class Sequence:
 
 	def set_sequence(self, sequence, base_pairs):
 		"""
-		set sequence method
-		@param sequence: sequence
-		@param base_pairs: dict for base pairs
-		@return: self
+		Method to set sequence
+
+		Args:
+			sequence (str): sequence
+			base_pairs (dict): base pairs
+
+		Returns:
+			self
 		"""
 		if sequence is not None:
 			self._sequence = list(sequence)
@@ -82,19 +73,15 @@ class Sequence:
 		return self
 
 
-	def get_name(self):
+	def get_sequence(self, sequence_type="list"):
 		"""
-		return name
-		@return name
-		"""
-		return self._name
+		Method to return sequence
 
+		Args:
+			sequence_type (str, optional): "list" or "string" (Default: "list")
 
-	def get_sequence(self, sequence_type = "list"):
-		"""
-		return sequence
-		@param sequence_type: "list" or "string" (Default: list)
-		@return sequence
+		Returns:
+			str: sequence
 		"""
 		if sequence_type == "string":
 			return "".join(self._sequence)
@@ -105,24 +92,20 @@ class Sequence:
 			sys.exit(1)
 
 
-	def is_complement(self):
+	def get_freq(self, parameter_types, base_pairs, flag_cache=True):
 		"""
-		return self complement or not
-		@return True or False
-		"""
-		return self._is_self_complement
+		Method to return pair frequency
 
+		Args:
+			parameter_types (list or objParameter): list for parameter types or objParameter
+			base_pairs (dict): base pairs
+			flag_cache (bool, optional): use cache data (Default: True)
 
-	def get_freq(self, parameter_types, base_pairs, flag_cache = True):
-		"""
-		return pair frequency
-		@param parameter_types: list for parameter types or parameter object
-		@param base_pairs: dict for base pairs
-		@param flag_cache: use cache data (Default: True)
-		@return pair frequency list
+		Returns:
+			list: pair frequency
 		"""
 		if type(parameter_types) == Parameter:
-			parameter_types = parameter_types.get_parameter(data_type = "name")
+			parameter_types = parameter_types.get_parameter(data_type="name")
 
 		if flag_cache and parameter_types == self._cache_parameter_types and base_pairs == self._cache_base_pairs:
 			# flag_cache is True and condition is the same => use cache
@@ -189,10 +172,14 @@ class Sequence:
 
 	def get_energy(self, obj_parameter, base_pairs):
 		"""
-		return energy value
-		@param base_pairs: dict for base pairs
-		@param obj_parameter: Parameter object
-		@return energy_value
+		Method to return energy value
+
+		Args:
+			obj_parameter (objParameter): Paramete object
+			base_pairs (dict): base pairs
+
+		Returns:
+			float: energy value
 		"""
 		# calculate energy
 		energy = 0.0
@@ -200,8 +187,3 @@ class Sequence:
 		energy = sum([cnt_pair * obj_parameter.get_parameter(parameter_type)[0] for parameter_type, cnt_pair in freq.items()])
 
 		return energy
-
-
-# =============== main =============== #
-# if __name__ == '__main__':
-# 	main()

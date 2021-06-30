@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import pickle
 import numpy as np
 import statistics
+
 
 
 # =============== class =============== #
@@ -15,7 +15,7 @@ class DataGroup:
 		@param name: this object name
 		"""
 		# member variables
-		self._name = name
+		self._name = ""
 		self._sequences = []
 		self._energy = []
 		self._error = []
@@ -23,76 +23,77 @@ class DataGroup:
 		self._base_pairs = {}
 		self._is_fitting = None
 
-
-	def save_pickle(self, output_file):
-		"""
-		save to pickle
-		@param output_file: output pickle file path
-		@return self (for chain method)
-		"""
-		with open(output_file, "wb") as obj_output:
-			pickle.dump(self, obj_output)
-			sys.stderr.write("INFO: save pickle file to '{0}'\n".format(output_file))
-		return self
-
-
-	def restore_pickle(self, input_file):
-		"""
-		restore from pickle
-		@param input_file: pickle file path
-		@return self (for chain method)
-		@return self (for chain method)
-		"""
-		with open(input_file, "rb") as obj_input:
-			self = pickle.load(obj_input)
-			sys.stderr.write("INFO: restore object from pickle file '{0}'\n".format(input_file))
-		return self
-
-
-	def set_name(self, name):
-		"""
-		set name
-		@param name: data name
-		@return self
-		"""
-		self._name = name
-		return self
+		self.set_name(name)
 
 
 	@property
 	def name(self):
-		"""
-		return data name
-		@return name
-		"""
 		return self._name
 
+	@property
+	def sequences(self):
+		return self._sequences
 
-	@name.setter
-	def name(self, name):
+	@property
+	def energy(self):
+		return self._energy
+
+	@property
+	def error(self):
+		return self._error
+
+	@property
+	def error_sign(self):
+		return self._error_sign
+
+	@property
+	def base_pairs(self):
+		return self._base_pairs
+
+	@property
+	def is_fitting(self):
+		return self._is_fitting
+
+
+	def set_name(self, name):
 		"""
-		set name
-		@param name: data name
+		Method to set name
+
+		Args:
+			name (str): data name
+
+		Returns:
+			self
 		"""
 		self._name = name
+		return self
 
 
 	def set_base_pair(self, base_pairs):
 		"""
-		set base pair information
-		@param base_pairs: dict for base pairs
-		@return self
+		Method to set base pair information
+
+		Args:
+			base_pairs (dict): base pairs
+
+		Returns:
+			self
 		"""
 		self._base_pairs = base_pairs
 		return self
 
 
-	def append(self, obj_sequence, exp_value, exp_value_e = 0.0):
+	def append(self, obj_sequence, exp_value, exp_value_e=0.0):
 		"""
-		append sequence object and experimental data
-		@param obj_sequence: Sequence object
-		@param exp_value: experimental value
-		@return: self
+		Method to append sequence object and experimental data
+
+		Args:
+			obj_sequence (objSequence): Sequence Object
+			exp_value (float): experimental value
+			exp_value_e (float, optional): error value of experimental value (Default: 0.0)
+
+		Returns:
+			self
 		"""
 		self._sequences.append(obj_sequence)
 		self._energy.append(exp_value)
@@ -107,11 +108,15 @@ class DataGroup:
 		return self
 
 
-	def get_sequence(self, data_type = None):
+	def get_sequence(self, data_type=None):
 		"""
-		return Sequence object
-		@param data_type: None or "sequence"
-		@return sequence object list for None or sequence string list for "sequence"
+		Method to return Sequence object
+
+		Args:
+			data_type (None or str, optional): None or "sequence" (Default: None)
+
+		Returns:
+			list of objSequence for None or sequence string list for "sequence"
 		"""
 		if data_type is None:
 			return self._sequences
@@ -119,12 +124,16 @@ class DataGroup:
 			return [x.get_sequence() for x in self._sequences]
 
 
-	def get_energy(self, flag_sequence = False, obj_parameters = []):
+	def get_energy(self, flag_sequence=False, obj_parameters=[]):
 		"""
-		return experimental value list
-		@param flag_sequence: return energy with sequence (Default: False)
-		@param obj_parameters: Parameter object list (Default: [])
-		@return energy value list
+		Method to return experimental value list
+
+		Args:
+			flag_sequence (bool, optional): return energy with sequence (Default: False)
+			obj_parameters (list, optional): Paramete robject list (Default: [])
+
+		Returns:
+			list: energy value
 		"""
 		energy_data = []
 		for idx in range(len(self._sequences)):
@@ -139,23 +148,18 @@ class DataGroup:
 		return energy_data
 
 
-	@property
-	def is_fitting(self):
+	def get_stat(self, obj_parameter, mode=None, deg=1, error_sign=None):
 		"""
-		return flag_fitting
-		@return flag_fitting
-		"""
-		return self._is_fitting
+		Method to return statistics
 
+		Args:
+			obj_parameter (str): parameter name
+			mode (None or str, optional): None, "r", "r2", "slope", "intercept", "diff_abs", "diff_mean", "diff_std", "diff_sum, diff_square" (Default: None)
+			deg (int, optional): dimension for curve fitting (Default: 1)
+			error_sign (list, optional): sign for error (Default: None)
 
-	def get_stat(self, obj_parameter, mode = None, deg = 1, error_sign = None):
-		"""
-		return statistics
-		@param mode: None, "r", "r2", "slope", "intercept", "diff_abs", "diff_mean", "diff_std", "diff_sum, diff_square" (Default: None)
-		@param obj_parameter: degree of the fitting polynomial (Default: 1)
-		@param deg(int): dimension for curve fitting
-		@param error_sign(list): sign for error (if sign is given, returned value contain positive or negative error)
-		@return statistics value or return [r, r2, slope, intercept, diff_abs, diff_mean, diff_std, diff_sum, diff_square] list when data_type is None
+		Returns:
+			list: [r, r2, slope, intercept, diff_abs, diff_mean, diff_std, diff_sum, diff_square] list when data_type is None
 		"""
 		if self._is_fitting:
 			if type(error_sign) != list:
@@ -201,8 +205,3 @@ class DataGroup:
 		else:
 			sys.stderr.write("ERROR: undefined mode at get_stat() in DataGroup class.\n")
 			sys.exit(1)
-
-
-# =============== main =============== #
-# if __name__ == '__main__':
-# 	main()
