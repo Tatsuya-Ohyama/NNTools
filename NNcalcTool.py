@@ -133,7 +133,7 @@ if __name__ == '__main__':
 			obj_output.write("Program version: {0}\n".format(VERSION))
 			obj_output.write("Sequence file: {0} ({1} sequences)\n".format(args.file_sequence, len(sequences)))
 			obj_output.write("Parameter file: {0}\n".format(args.file_parameter))
-			obj_output.write("|{0:^15}|{1[0]:^8}|{1[1]:^8}|{1[2]:^8}|\n".format("", [param.get_name() for param in parameters]))
+			obj_output.write("|{0:^15}|{1[0]:^8}|{1[1]:^8}|{1[2]:^8}|\n".format("", [param.name for param in parameters]))
 			obj_output.write("|{0:-^15}|{0:-^8}|{0:-^8}|{0:-^8}|\n".format(""))
 			for parameter_type in parameters[0].get_parameter(data_type = "name"):
 				obj_output.write("|{0:^15}|{1[0]:>8.3f}|{1[1]:>8.3f}|{1[2]:>8.3f}|\n".format(parameter_type, [param.get_parameter(parameter_type)[0] for param in parameters]))
@@ -144,8 +144,8 @@ if __name__ == '__main__':
 	with open(args.file_output, "w") as obj_output:
 		writer = csv.writer(obj_output)
 		parameter_types = list(parameters[0].get_parameter(data_type = "name"))
-		writer.writerow(["Comment", "Sequence"] + [param.get_name() for param in parameters] + [""] + parameter_types)
+		writer.writerow(["Comment", "Sequence"] + [param.name for param in parameters] + [""] + parameter_types)
 		for sequence in sequences:
 			freq = sequence.get_freq(parameters[0], base_pair)
 			energy = [sequence.get_energy(param, base_pair) for param in parameters]
-			writer.writerow([sequence.get_name(), sequence.get_sequence("string")] + energy + [""] + [freq[param] for param in parameter_types])
+			writer.writerow([sequence.name, sequence.get_sequence("string")] + energy + [""] + [freq[param] for param in parameter_types])
