@@ -461,7 +461,7 @@ e.g., "reg:./." (length parameter)
 				parameters[exp_idx].update_parameter_error("all", new_parameters[idx * 2 + 0].get_parameter())
 				parameters[exp_idx].update_parameter_error("all", new_parameters[idx * 2 + 1].get_parameter())
 
-		elif args.FLAG_ERROR_strict:
+		elif args.FLAG_ERROR_STRICT:
 			sys.stderr.write("Optimize parameters with errors by strict mode.\n")
 			max_iter = len(list(itertools.product([-1, 1], repeat = len(exp_datas[0].get_sequence()))))
 			if args.THREAD is not None:
