@@ -2,12 +2,19 @@
 # -*- coding: utf-8 -*-
 
 import sys
+<<<<<<< HEAD
+=======
+import pickle
+>>>>>>> origin/master
 import re
 
 from classes.parameter import Parameter
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/master
 # =============== class =============== #
 class Sequence:
 	""" Sequence class """
@@ -22,10 +29,15 @@ class Sequence:
 		self._cache_base_pairs = {}
 		self._cache_freq = {}
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/master
 		# initiation
 		self.set_name(name)
 
 
+<<<<<<< HEAD
 	@property
 	def name(self):
 		return self._name
@@ -44,6 +56,38 @@ class Sequence:
 
 		Returns:
 			self
+=======
+	def save_pickle(self, output_file):
+		"""
+		save to pickle
+		@param output_file: output pickle file path
+		@return self (for chain method)
+		"""
+		with open(output_file, "wb") as obj_output:
+			pickle.dump(self, obj_output)
+			sys.stderr.write("INFO: save pickle file to '{0}'\n".format(output_file))
+		return self
+
+
+	def restore_pickle(self, input_file):
+		"""
+		restore from pickle
+		@param input_file: pickle file path
+		@return self (for chain method)
+		@return self (for chain method)
+		"""
+		with open(input_file, "rb") as obj_input:
+			self = pickle.load(obj_input)
+			sys.stderr.write("INFO: restore object from pickle file '{0}'\n".format(input_file))
+		return self
+
+
+	def set_name(self, name):
+		"""
+		set name
+		@param name: name
+		@return self
+>>>>>>> origin/master
 		"""
 		self._name = name
 		return self
@@ -51,6 +95,7 @@ class Sequence:
 
 	def set_sequence(self, sequence, base_pairs):
 		"""
+<<<<<<< HEAD
 		Method to set sequence
 
 		Args:
@@ -59,6 +104,12 @@ class Sequence:
 
 		Returns:
 			self
+=======
+		set sequence method
+		@param sequence: sequence
+		@param base_pairs: dict for base pairs
+		@return: self
+>>>>>>> origin/master
 		"""
 		if sequence is not None:
 			self._sequence = list(sequence)
@@ -73,6 +124,7 @@ class Sequence:
 		return self
 
 
+<<<<<<< HEAD
 	def get_sequence(self, sequence_type="list"):
 		"""
 		Method to return sequence
@@ -82,6 +134,21 @@ class Sequence:
 
 		Returns:
 			str: sequence
+=======
+	def get_name(self):
+		"""
+		return name
+		@return name
+		"""
+		return self._name
+
+
+	def get_sequence(self, sequence_type = "list"):
+		"""
+		return sequence
+		@param sequence_type: "list" or "string" (Default: list)
+		@return sequence
+>>>>>>> origin/master
 		"""
 		if sequence_type == "string":
 			return "".join(self._sequence)
@@ -92,6 +159,7 @@ class Sequence:
 			sys.exit(1)
 
 
+<<<<<<< HEAD
 	def get_freq(self, parameter_types, base_pairs, flag_cache=True):
 		"""
 		Method to return pair frequency
@@ -106,6 +174,26 @@ class Sequence:
 		"""
 		if type(parameter_types) == Parameter:
 			parameter_types = parameter_types.get_parameter(data_type="name")
+=======
+	def is_complement(self):
+		"""
+		return self complement or not
+		@return True or False
+		"""
+		return self._is_self_complement
+
+
+	def get_freq(self, parameter_types, base_pairs, flag_cache = True):
+		"""
+		return pair frequency
+		@param parameter_types: list for parameter types or parameter object
+		@param base_pairs: dict for base pairs
+		@param flag_cache: use cache data (Default: True)
+		@return pair frequency list
+		"""
+		if type(parameter_types) == Parameter:
+			parameter_types = parameter_types.get_parameter(data_type = "name")
+>>>>>>> origin/master
 
 		if flag_cache and parameter_types == self._cache_parameter_types and base_pairs == self._cache_base_pairs:
 			# flag_cache is True and condition is the same => use cache
@@ -172,6 +260,7 @@ class Sequence:
 
 	def get_energy(self, obj_parameter, base_pairs):
 		"""
+<<<<<<< HEAD
 		Method to return energy value
 
 		Args:
@@ -180,6 +269,12 @@ class Sequence:
 
 		Returns:
 			float: energy value
+=======
+		return energy value
+		@param base_pairs: dict for base pairs
+		@param obj_parameter: Parameter object
+		@return energy_value
+>>>>>>> origin/master
 		"""
 		# calculate energy
 		energy = 0.0
@@ -187,3 +282,11 @@ class Sequence:
 		energy = sum([cnt_pair * obj_parameter.get_parameter(parameter_type)[0] for parameter_type, cnt_pair in freq.items()])
 
 		return energy
+<<<<<<< HEAD
+=======
+
+
+# =============== main =============== #
+# if __name__ == '__main__':
+# 	main()
+>>>>>>> origin/master
