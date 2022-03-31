@@ -2,17 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import sys
-<<<<<<< HEAD
 import copy
 
 
 
-=======
-import pickle
-import copy
-
-
->>>>>>> origin/master
 # =============== class =============== #
 class Parameter:
 	""" Parameter class for one energy type """
@@ -23,7 +16,6 @@ class Parameter:
 		self._change = {}
 
 
-<<<<<<< HEAD
 	@property
 	def name(self):
 		return self._name
@@ -35,35 +27,10 @@ class Parameter:
 	@property
 	def change(self):
 		return self._change
-=======
-	def save_pickle(self, output_file):
-		"""
-		save to pickle
-		@param output_file: output pickle file path
-		@return self (for chain method)
-		"""
-		with open(output_file, "wb") as obj_output:
-			pickle.dump(self, obj_output)
-			sys.stderr.write("INFO: save pickle file to '{0}'\n".format(output_file))
-		return self
-
-
-	def restore_pickle(self, input_file):
-		"""
-		restore from pickle
-		@param input_file: pickle file path
-		@return self (for chain method)
-		"""
-		with open(input_file, "rb") as obj_input:
-			self = pickle.load(obj_input)
-			sys.stderr.write("INFO: restore object from pickle file '{0}'\n".format(input_file))
-		return self
->>>>>>> origin/master
 
 
 	def set_name(self, name):
 		"""
-<<<<<<< HEAD
 		Method to set parameter name
 
 		Args:
@@ -71,11 +38,6 @@ class Parameter:
 
 		Returns:
 			self
-=======
-		set name
-		@param name: name
-		@return self
->>>>>>> origin/master
 		"""
 		self._name = name
 		return self
@@ -83,7 +45,6 @@ class Parameter:
 
 	def append_parameter(self, parameter_type, parameter_val):
 		"""
-<<<<<<< HEAD
 		Method to append parameter with error
 
 		Args:
@@ -92,19 +53,12 @@ class Parameter:
 
 		Returns:
 			self
-=======
-		append parameter with error method
-		@param parameter_type: parameter name ("AA/TT", "AT/TA", ..., "init_XX", "symmetry", or "5term_TA (by regexp)")
-		@param parameter_val: parameter value list ([parameter, minimum parameter with error, maximum value with error] or parameter)
-		@return self
->>>>>>> origin/master
 		"""
 		self._parameters[parameter_type] = [parameter_val for x in range(3)]
 		self._change[parameter_type] = True
 		return self
 
 
-<<<<<<< HEAD
 	def set_parameter(self, parameter_type, parameter_val=None):
 		"""
 		Method to set parameter with error
@@ -115,14 +69,6 @@ class Parameter:
 
 		Returns:
 			self
-=======
-	def set_parameter(self, parameter_type, parameter_val = None):
-		"""
-		set parameter with error method
-		@param parameter_type: parameter name (all, "AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", or "5term_TA (by regexp)")
-		@param parameter_val: parameter value ([parameter, minimum parameter with error, maximum value with error] or parameter)
-		@return self
->>>>>>> origin/master
 		"""
 		if parameter_type == "all":
 			# All data are received without modification
@@ -149,7 +95,6 @@ class Parameter:
 
 	def update_parameter_error(self, parameter_type, parameter_value):
 		"""
-<<<<<<< HEAD
 		Method to calculate and set error
 
 		Args:
@@ -158,12 +103,6 @@ class Parameter:
 
 		Returns:
 			self
-=======
-		calculate and set error method
-		@param parameter_type: parameter type or "all"
-		@param parameter_value: parameter value for one parameter type or parameter value list for "all"
-		@return self
->>>>>>> origin/master
 		"""
 		parameter_types = []
 		parameter_values = []
@@ -192,7 +131,6 @@ class Parameter:
 
 	def set_change_stat(self, parameter_type, state):
 		"""
-<<<<<<< HEAD
 		Method to change state for changing parameter
 
 		Args:
@@ -201,12 +139,6 @@ class Parameter:
 
 		Returns:
 			self
-=======
-		change state for changing parameter
-		@param parameter_type: parameter type or "all"
-		@param state: True or False
-		@return self
->>>>>>> origin/master
 		"""
 		if parameter_type == "all":
 			self._change = {k: state for k in self._change.keys()}
@@ -217,7 +149,6 @@ class Parameter:
 
 	def remove_parameter(self, parameter_name):
 		"""
-<<<<<<< HEAD
 		Method to remove parameter
 
 		Args:
@@ -225,11 +156,6 @@ class Parameter:
 
 		Returns:
 			self
-=======
-		remove parameter
-		@param parameter_name: parameter name
-		@return self
->>>>>>> origin/master
 		"""
 		if parameter_name in self._parameters.keys():
 			del(self._parameters[parameter_name])
@@ -241,20 +167,14 @@ class Parameter:
 
 	def clone(self):
 		"""
-<<<<<<< HEAD
 		Method to return clone parameter set
 
 		Returns:
 			obj_Parameter
-=======
-		return clone(self)
-		@return self
->>>>>>> origin/master
 		"""
 		return copy.deepcopy(self)
 
 
-<<<<<<< HEAD
 	def is_change(self, parameter_type=None):
 		"""
 		Method to return change state
@@ -264,21 +184,6 @@ class Parameter:
 
 		Returns:
 			list for None or bool for parameter type
-=======
-	def get_name(self):
-		"""
-		return name
-		@return name
-		"""
-		return self._name
-
-
-	def is_change(self, parameter_type = None):
-		"""
-		return change state
-		@param parameter_type: None or parameter type
-		@return change state list for None, or boolean type value for parameter type
->>>>>>> origin/master
 		"""
 		if parameter_type is None:
 			return self._change
@@ -289,17 +194,6 @@ class Parameter:
 			sys.exit(1)
 
 
-<<<<<<< HEAD
-=======
-	def get_parameter(self, parameter_type = None, data_type = "raw"):
->>>>>>> origin/master
-		"""
-		return parameter
-		@param parameter_type: parameter type
-		@param data_type: raw ([value, minimum value with error, maximum value with error]) or fix (value, error+/-)
-		@return parameter (list for None(all) or float value for each parameter)
-		"""
-<<<<<<< HEAD
 	def get_parameter(self, parameter_type=None, data_type="raw"):
 		"""
 		Method to return parameter
@@ -311,19 +205,13 @@ class Parameter:
 		Returns:
 			list for None(all) or float value for each parameter
 		"""
-=======
->>>>>>> origin/master
 		values = {}
 		if data_type == "raw":
 			values = self._parameters
 		elif data_type == "fix":
 			error = {k: abs(v[1] - v[2]) / 2 for k, v in self._parameters.items()}
-<<<<<<< HEAD
 			min_val = [min(v[1:]) for v in self._parameters.values()]
 			values = {k: [m + error[k], error[k]] for m, (k, v) in zip(min_val, self._parameters.items())}
-=======
-			values = {k: [v[1] + error[k], error[k]] for k, v in self._parameters.items()}
->>>>>>> origin/master
 		elif data_type == "name":
 			return self._parameters.keys()
 		else:
@@ -343,12 +231,3 @@ class Parameter:
 				# all parameters are specified
 				sys.stderr.write("ERROR: undefined parameter_type in get_parameter() in Parameter class ({0}).\n".format(parameter_type))
 				sys.exit(1)
-<<<<<<< HEAD
-=======
-
-
-
-# =============== main =============== #
-# if __name__ == '__main__':
-# 	main()
->>>>>>> origin/master
