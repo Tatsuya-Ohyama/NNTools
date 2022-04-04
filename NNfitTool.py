@@ -239,8 +239,8 @@ column: Label, Sequence, dH, dH(error), dS, dS(error), dG, and dG(error)
 """)
 	input_group.add_argument("-r", dest="ref_param", metavar="REF_PARAM.csv",
 	help = """referenced parameter values
-column: Parameter type, dH, dS, dG, space, dH(change flag), dS(change flag), and dG(change flag))
-Parameter type: AA/TT, GC/CG, or etc, and re: (regexp) and reg: (counted pattern by regexp)
+column: `Parameter`, `dH`, `dS`, `dG`, space, `dH (change)`, `dS (change)`, `dG (change)`, space, `dH (Direction)`, `dS (Direction)`, and `dG (Direction)`
+`Parameter`: AA/TT, GC/CG, or etc, and re: (regexp) and reg: (counted pattern by regexp)
 e.g., "re:^A/^T" and "re:^T/^A" (initial parameter for A/T (both specification require))
 e.g., "reg:.*?G.*?/.*?C.*?" (number of G/C pair parameter)
 e.g., "reg:./." (length parameter)
@@ -262,7 +262,7 @@ e.g., "reg:./." (length parameter)
 	error_group.add_argument("-es", dest="FLAG_ERROR_STRICT", action="store_true", default=False, help="strictly consider with experimental value with error")
 
 	misc_group = parser.add_argument_group("Misc")
-	misc_group.add_argument("-t", dest="THREAD", metavar="THREAD", type=int, default=1, help="number of threads for parallel calculation (Default: 1)")
+	misc_group.add_argument("-t", dest="THREAD", metavar="THREAD", type=int, default=1, help="number of threads for parallel calculation (Default: 1)(Efficient up to 3)")
 	misc_group.add_argument("--verbose", "-v", dest="VERBOSE", action="count", default=0, help="verbose (-v: display results / -vv: display calculation results)")
 	misc_group.add_argument("--make-template", dest="FLAG_MAKE_TEMPLATE", action="store_true", default=False, help="make template files ({0} and {1}) and exit".format(TEMPLATE_PARAM, TEMPLATE_EXP))
 
