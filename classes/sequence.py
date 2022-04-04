@@ -7,7 +7,6 @@ import re
 from classes.parameter import Parameter
 
 
-
 # =============== class =============== #
 class Sequence:
 	""" Sequence class """

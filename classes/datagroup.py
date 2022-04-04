@@ -6,7 +6,6 @@ import numpy as np
 import statistics
 
 
-
 # =============== class =============== #
 class DataGroup:
 	""" DataGroup class """

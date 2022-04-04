@@ -194,12 +194,6 @@ class Parameter:
 			sys.exit(1)
 
 
-		"""
-		return parameter
-		@param parameter_type: parameter type
-		@param data_type: raw ([value, minimum value with error, maximum value with error]) or fix (value, error+/-)
-		@return parameter (list for None(all) or float value for each parameter)
-		"""
 	def get_parameter(self, parameter_type=None, data_type="raw"):
 		"""
 		Method to return parameter
