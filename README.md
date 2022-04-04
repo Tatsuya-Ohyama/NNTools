@@ -18,13 +18,15 @@ $ NNcalcTool.py [-h] -s SEQUENCE_FILE.csv -p PARAMETER_FILE.csv -o OUTPUT_FILE.c
 	: show this help message and exit
 * `-s SEQUENCE_FILE.csv`
 	: sequence file of csv format
-	: * column: `Label` and `Sequence`
+
+	* column: `Label` and `Sequence`
 		* `Label`: experimental name, label, note and description.
 		* `Sequence`: Sequence
 
 * `-p PARAMETER_FILE.csv`
 	: input file for parameters
-	: * column: `Parameter`, `dH`, `dS`, and `dG`
+
+	* column: `Parameter`, `dH`, `dS`, and `dG`
 		* `Parameter`: `AA/TT`, `GC/CG`, or etc, and `re:` (regexp) and `reg:` (counted pattern by regexp)
 		* `dH`: $\Delta H$ parameter
 		* `dS`: $\Delta S$ parameter
@@ -56,8 +58,8 @@ $ NNfitTool.py [-h] -x EXP.csv [-r REF_PARAM.csv] -o OUTPUT.csv [-O] [-d THRESHO
 * Input:
 	* `-x EXP.csv`
 		: sequence and experimental value file
-		: * column: `Label`, `Sequence`, `dH`, `dH(error)`, `dS`, `dS(error)`, `dG`, and `dG(error)`
 
+		* column: `Label`, `Sequence`, `dH`, `dH(error)`, `dS`, `dS(error)`, `dG`, and `dG(error)`
 			* `Label`: experimental name, label, note and description.
 			* `Sequence`: Sequence
 			* `dH`: $\Delta H$ measured in the experiment.
@@ -69,7 +71,8 @@ $ NNfitTool.py [-h] -x EXP.csv [-r REF_PARAM.csv] -o OUTPUT.csv [-O] [-d THRESHO
 
 	* `-r REF_PARAM.csv`
 		: referenced parameter values
-		: * column: `Parameter`, `dH`, `dS`, `dG`, space, `dH (change)`, `dS (change)`, `dG (change)`, space, `dH (Direction)`, `dS (Direction)`, and `dG (Direction)`
+
+		* column: `Parameter`, `dH`, `dS`, `dG`, space, `dH (change)`, `dS (change)`, `dG (change)`, space, `dH (Direction)`, `dS (Direction)`, and `dG (Direction)`
 			* `Parameter`: `AA/TT`, `GC/CG`, or etc, and `re:` (regexp) and `reg:` (counted pattern by regexp)
 				* e.g., `re:^A/^T` and `re:^T/^A` (initial parameter for A/T (both specification require))
 				* e.g., `reg:.*?G.*?/.*?C.*?` (number of G/C pair parameter)
