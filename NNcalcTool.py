@@ -10,7 +10,6 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 import argparse
 import csv
-import os
 import datetime
 import re
 
@@ -25,7 +24,6 @@ VERSION = "1.1"
 TEMPLATE_PARAM = "template_ref_param.csv"
 TEMPLATE_SEQUENCE = "template_sequence.csv"
 LIMIT_LEN_SEQUENCE = 100
-STANDARD_BASES = ["A", "C", "G", "T", "U"]
 RE_STANDARD_SEQUENCE = re.compile(r"([ACGTU]+)")
 
 
