@@ -5,6 +5,10 @@ import sys
 import re
 
 from classes.parameter import Parameter
+<<<<<<< HEAD
+=======
+
+>>>>>>> NNcalcTool.py
 
 
 # =============== class =============== #
@@ -64,7 +68,7 @@ class Sequence:
 
 			misstype = [base for base in self._sequence if base not in base_pairs.keys()]
 			if len(misstype) != 0:
-				sys.stderr.write("ERROR: misstype of base: {0}.\n".format(misstype))
+				sys.stderr.write("ERROR: misstype of base: {0} in `{1}`.\n".format(misstype, self._name))
 				sys.exit(1)
 
 			self._complement = [base_pairs[base] for base in self._sequence]
