@@ -287,7 +287,7 @@ class Sequence:
 
 # =============== main =============== #
 if __name__ == '__main__':
-	parser = argparse.ArgumentParser(description="neighbor method", formatter_class=argparse.RawTextHelpFormatter)
+	parser = argparse.ArgumentParser(description="Program to count NN pairs", formatter_class=argparse.RawTextHelpFormatter)
 	parser.add_argument("-f", dest="FASTA_FILES", metavar="SEQUENCE_FILE.fasta", nargs="+", required="--make-template" not in sys.argv, help="sequence file of FASTA format")
 	parser.add_argument("-p", dest="PARAMETER_FILE", metavar="PARAMETER_FILE.csv", required="--make-template" not in sys.argv, help="input file for parameters")
 	parser.add_argument("-o", dest="OUTPUT_FILE", metavar="OUTPUT_FILE.csv", required="--make-template" not in sys.argv, help="output file")
