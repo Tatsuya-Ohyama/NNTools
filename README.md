@@ -5,6 +5,8 @@ Group of programs to calculate nearest-neighbor parameters for nucleic acids
 
 * `NNcalcTool.py`: Program to calculate various energies of nucleic acids from parameters
 * `NNfitTool.py`: Program for fitting parameters from experimental values
+* `NNcountTool.py`: Program to count NN pairs
+
 
 
 ## Usage
@@ -118,6 +120,27 @@ $ NNfitTool.py [-h] -x EXP.csv [-r REF_PARAM.csv] -o OUTPUT.csv [-O] [-d THRESHO
 			```sh
 			$ NNfitTool.py --make-template
 			```
+
+
+### NNcountTool.py
+
+```sh
+$ NNcountTool.py [-h] -f SEQUENCE_FILE.fasta [SEQUENCE_FILE.fasta ...] -p PARAMETER_FILE.csv -o OUTPUT_FILE.csv [-O] [--make-template]
+```
+
+* `-h, --help`
+	: show this help message and exit
+* `-f SEQUENCE_FILE.fasta [SEQUENCE_FILE.fasta ...]`
+	: sequence file of FASTA format
+* `-p PARAMETER_FILE.csv`
+	: input file for parameters
+* `-o OUTPUT_FILE.csv`
+	: output file
+* `-O`
+	: overwrite forcibly
+* `--make-template`
+	: make template files (template_ref_param.csv) and exit
+
 
 
 ## Requirement
