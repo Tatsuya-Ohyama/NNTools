@@ -20,16 +20,16 @@ from classes.sequence import Sequence
 
 
 # =============== variable =============== #
-VERSION = "1.0"
+VERSION = "1.1"
 TEMPLATE_PARAM = "template_ref_param.csv"
 TEMPLATE_SEQUENCE = "template_sequence.csv"
-
+LIMIT_LEN_SEQUENCE = 100
 
 
 # =============== function =============== #
 def make_template(flag_overwrite):
 	"""
-	create template files for ref_param.csv and ref_exp.csv
+	Function to create template files for ref_param.csv and ref_exp.csv
 	"""
 	if flag_overwrite == False:
 		check_overwrite(TEMPLATE_PARAM)
@@ -47,10 +47,73 @@ def make_template(flag_overwrite):
 
 
 
+def read_sequence_csv(input_file, base_pair):
+	"""
+	Function to read sequences from .csv file
+
+	Args:
+		input_file (str): csv file path
+		base_pair (dict): base pair
+
+	Returns:
+		list: [SequenceObject, ...]
+	"""
+	sequences = []
+	with open(input_file, "r") as obj_input:
+		reader = csv.reader(obj_input)
+		flag_read = False
+		for line_val in reader:
+			if "Sequence" in line_val or "Sequences" in line_val:
+				flag_read = True
+				continue
+
+			if flag_read:
+				sequences.append(Sequence(line_val[0]).set_sequence(line_val[1].upper(), base_pair))
+	return sequences
+
+
+
+def read_sequence_fasta(input_file, base_pair):
+	"""
+	Function to read sequences from .fasta or .fna file
+
+	Args:
+		input_file (str): fasta file path
+		base_pair (dict): base pair
+
+	Returns:
+		list: [SequenceObject, ...]
+	"""
+	sequences = []
+	with open(input_file, "r") as obj_input:
+		sequence = ""
+		for line_val in obj_input:
+			if line_val.startswith(">"):
+				if sequence != "":
+					# when previous sequence remained, register sequence
+					sequences[-1].set_sequence(sequence.replace("N", "").upper(), base_pair)
+					sequence = ""
+
+				# create new sequence object
+				sequences.append(Sequence(line_val.strip().replace(">", "", 1)))
+
+			else:
+				# save sequence or connect sequence with previous line
+				sequence += line_val.strip()
+
+		if sequence != "":
+			sequences[-1].set_sequence(sequence.replace("N", "").upper(), base_pair)
+
+	return sequences
+
+
+
 # =============== main =============== #
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description="neighbor method", formatter_class=argparse.RawTextHelpFormatter)
-	parser.add_argument("-s", dest="FILE_SEQUENCE", metavar="SEQUENCE_FILE.csv", required="--make-template" not in sys.argv, help="sequence file of csv format")
+	parser_sequence = parser.add_mutually_exclusive_group(required="--make-template" not in sys.argv)
+	parser_sequence.add_argument("-s", dest="FILE_SEQUENCE", metavar="SEQUENCE_FILE.csv", nargs="+", help="sequence file of csv format")
+	parser_sequence.add_argument("-f", dest="FILE_FASTA", metavar="SEQUENCE_FILE.fasta", nargs="+", help="sequence file of FASTA format")
 	parser.add_argument("-p", dest="FILE_PARAMETER", metavar="PARAMETER_FILE.csv", required="--make-template" not in sys.argv, help="input file for parameters")
 	parser.add_argument("-o", dest="FILE_OUTPUT", metavar="OUTPUT_FILE.csv", required="--make-template" not in sys.argv, help="output file")
 	parser.add_argument("-l", dest="FILE_LOG", metavar="LOG_FILE.log", help="log file (if not specify, a log file with the same name as -o option is generated)")
@@ -63,7 +126,6 @@ if __name__ == '__main__':
 		sys.exit(0)
 
 	check_exist(args.FILE_PARAMETER, 2)
-	check_exist(args.FILE_SEQUENCE, 2)
 
 	# reading parameters
 	parameters = []
@@ -86,8 +148,8 @@ if __name__ == '__main__':
 					# generate base_pair
 					base = line_val[0].split("/", 2)
 					tmp_base_pair = {}
-					tmp_base_pair[base[0][0:1]] = base[1][0:1]
-					tmp_base_pair[base[0][1:2]] = base[1][1:2]
+					tmp_base_pair[base[0][0:1]] = base[1][0:1].upper()
+					tmp_base_pair[base[0][1:2]] = base[1][1:2].upper()
 					for k, v in tmp_base_pair.items():
 						if k in base_pair.keys():
 							if base_pair[k] != v:
@@ -109,16 +171,16 @@ if __name__ == '__main__':
 
 	# reading sequence
 	sequences = []
-	with open(args.FILE_SEQUENCE, "r") as obj_input:
-		reader = csv.reader(obj_input)
-		flag_read = False
-		for line_val in reader:
-			if "Sequence" in line_val or "Sequences" in line_val:
-				flag_read = True
-				continue
+	if args.FILE_SEQUENCE is not None:
+		for file_sequence in args.FILE_SEQUENCE:
+			check_exist(file_sequence, 2)
+			sequences.extend(read_sequence_csv(file_sequence, base_pair))
 
-			if flag_read:
-				sequences.append(Sequence(line_val[0]).set_sequence(line_val[1], base_pair))
+	elif args.FILE_FASTA is not None:
+		for file_fasta in args.FILE_FASTA:
+			check_exist(file_fasta, 2)
+			sequences.extend(read_sequence_fasta(file_fasta, base_pair))
+
 
 	# output
 	if args.FILE_LOG is not None:
@@ -143,6 +205,7 @@ if __name__ == '__main__':
 			obj_output.write("Output file: {0}\n".format(args.FILE_OUTPUT))
 			obj_output.write("\n")
 
+
 	with open(args.FILE_OUTPUT, "w") as obj_output:
 		writer = csv.writer(obj_output)
 		parameter_types = list(parameters[0].get_parameter(data_type="name"))
@@ -150,4 +213,7 @@ if __name__ == '__main__':
 		for sequence in sequences:
 			freq = sequence.get_freq(parameters[0], base_pair)
 			energy = [sequence.get_energy(param, base_pair) for param in parameters]
-			writer.writerow([sequence.name, sequence.get_sequence("string")] + energy + [""] + [freq[param] for param in parameter_types])
+			seq = sequence.get_sequence("string")
+			if len(seq) > LIMIT_LEN_SEQUENCE:
+				seq = seq[:LIMIT_LEN_SEQUENCE] + "..."
+			writer.writerow([sequence.name, seq] + energy + [""] + [freq[param] for param in parameter_types])
