@@ -12,6 +12,7 @@ import argparse
 import csv
 import os
 import datetime
+import re
 
 from classes.basicfunc import check_exist, check_overwrite
 from classes.parameter import Parameter
@@ -24,6 +25,9 @@ VERSION = "1.1"
 TEMPLATE_PARAM = "template_ref_param.csv"
 TEMPLATE_SEQUENCE = "template_sequence.csv"
 LIMIT_LEN_SEQUENCE = 100
+STANDARD_BASES = ["A", "C", "G", "T", "U"]
+RE_STANDARD_SEQUENCE = re.compile(r"([ACGTU]+)")
+
 
 
 # =============== function =============== #
@@ -73,13 +77,14 @@ def read_sequence_csv(input_file, base_pair):
 
 
 
-def read_sequence_fasta(input_file, base_pair):
+def read_sequence_fasta(input_file, base_pair, flag_skip):
 	"""
 	Function to read sequences from .fasta or .fna file
 
 	Args:
 		input_file (str): fasta file path
 		base_pair (dict): base pair
+		flag_skip (bool): if True, skip ambiguous base and separate sequence by the base
 
 	Returns:
 		list: [SequenceObject, ...]
@@ -91,7 +96,24 @@ def read_sequence_fasta(input_file, base_pair):
 			if line_val.startswith(">"):
 				if sequence != "":
 					# when previous sequence remained, register sequence
-					sequences[-1].set_sequence(sequence.replace("N", "").upper(), base_pair)
+					if flag_skip:
+						standard_sequences = RE_STANDARD_SEQUENCE.findall(sequence)
+						if len(standard_sequences) != 1:
+							# when multiple sequences were found
+							num = 1
+							base_name = sequences[-1].name
+							sequences[-1].set_name("{0} ({1})".format(base_name, num))
+							sequences[-1].set_sequence(standard_sequences[0], base_pair)
+							for seq in standard_sequences[1:]:
+								if len(seq) == 1:
+									continue
+
+								num += 1
+								sequences.append(Sequence("{0} ({1})".format(base_name, num)).set_sequence(seq, base_pair))
+							sequence = ""
+							continue
+
+					sequences[-1].set_sequence(sequence, base_pair)
 					sequence = ""
 
 				# create new sequence object
@@ -99,10 +121,10 @@ def read_sequence_fasta(input_file, base_pair):
 
 			else:
 				# save sequence or connect sequence with previous line
-				sequence += line_val.strip()
+				sequence += line_val.strip().upper()
 
 		if sequence != "":
-			sequences[-1].set_sequence(sequence.replace("N", "").upper(), base_pair)
+			sequences[-1].set_sequence(sequence, base_pair)
 
 	return sequences
 
@@ -119,6 +141,7 @@ if __name__ == '__main__':
 	parser.add_argument("-l", dest="FILE_LOG", metavar="LOG_FILE.log", help="log file (if not specify, a log file with the same name as -o option is generated)")
 	parser.add_argument("-O", dest="FLAG_OVERWRITE", action="store_true", default=False, help="overwrite forcibly")
 	parser.add_argument("--make-template", dest="FLAG_MAKE_TEMPLATE", action="store_true", default=False, help="make template files ({0} and {1}) and exit".format(TEMPLATE_PARAM, TEMPLATE_SEQUENCE))
+	parser.add_argument("--skip-ambiguous", dest="FLAG_SKIP", action="store_true", default=False, help="skip ambiguous base (separate sequence by ambiguous base)")
 	args = parser.parse_args()
 
 	if args.FLAG_MAKE_TEMPLATE:
@@ -168,7 +191,6 @@ if __name__ == '__main__':
 			new_base_pair[v] = k
 	base_pair = new_base_pair
 
-
 	# reading sequence
 	sequences = []
 	if args.FILE_SEQUENCE is not None:
@@ -179,14 +201,11 @@ if __name__ == '__main__':
 	elif args.FILE_FASTA is not None:
 		for file_fasta in args.FILE_FASTA:
 			check_exist(file_fasta, 2)
-			sequences.extend(read_sequence_fasta(file_fasta, base_pair))
+			sequences.extend(read_sequence_fasta(file_fasta, base_pair, args.FLAG_SKIP))
 
 
 	# output
 	if args.FILE_LOG is not None:
-		path = os.path.splitext(args.FILE_OUTPUT)
-		args.FILE_LOG = path[0] + ".log"
-
 		if args.FLAG_OVERWRITE == False:
 			check_overwrite(args.FILE_OUTPUT)
 			check_overwrite(args.FILE_LOG)
