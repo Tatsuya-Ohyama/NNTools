@@ -14,7 +14,6 @@ import csv
 import re
 
 from classes.basicfunc import check_exist, check_overwrite
-from classes.parameter import Parameter
 
 
 
