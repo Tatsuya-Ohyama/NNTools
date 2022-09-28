@@ -66,19 +66,31 @@ def read_parameter_file(parameter_file):
 
 
 def read_fasta(fasta_file, parameters):
+	"""
+	Function to read FASTA file and analyze
+
+	Args:
+		fasta_file (str): FASTA file path
+		parameters (dict): {"AA/TT": [AA, TT], ...}
+
+	Returns:
+		list: [SequenceObject, ...]
+	"""
 	sequences = []
 	with open(fasta_file, "r") as obj_input:
 		sequence = ""
 		for line_val in obj_input:
 			if line_val.startswith(">"):
 				if len(sequence) != 0:
-					sequences[-1].set_parameters(analysis_sequence(sequence, parameters))
+					sequences[-1].set_parameters(count_pairs(sequence, parameters))
 					sequences[-1].set_length(len(sequence))
 					sequences[-1].set_invalid_bases(count_invalid_bases(sequence))
+					sequences[-1].set_n_GC(count_GC(sequence))
 					sequence = ""
 					sys.stderr.write("done.\n")
 
-				sequences.append(Sequence(line_val.strip().replace(">", "", 1), parameters.keys()))
+				seq_name = line_val.strip().replace(">", "", 1)
+				sequences.append(Sequence(seq_name, parameters.keys()))
 				sys.stderr.write("{0} ... ".format(sequences[-1].name))
 				sys.stderr.flush()
 				continue
@@ -86,15 +98,16 @@ def read_fasta(fasta_file, parameters):
 			sequence += line_val.upper().strip()
 
 		if len(sequence) != 0:
-			sequences[-1].set_parameters(analysis_sequence(sequence, parameters))
+			sequences[-1].set_parameters(count_pairs(sequence, parameters))
 			sequences[-1].set_length(len(sequence))
 			sequences[-1].set_invalid_bases(count_invalid_bases(sequence))
+			sequences[-1].set_n_GC(count_GC(sequence))
 			sys.stderr.write("done.\n")
 
 	return sequences
 
 
-def analysis_sequence(sequence, parameters):
+def count_pairs(sequence, parameters):
 	"""
 	Function count NN pairs
 
@@ -127,6 +140,19 @@ def count_invalid_bases(sequence):
 	return {invalid_base: sequence.count(invalid_base) for invalid_base in INVALID_BASES}
 
 
+def count_GC(sequence):
+	"""
+	Functino to count GC bases
+
+	Args:
+		sequence (str): sequence
+
+	Returns:
+		int: number of GC bases
+	"""
+	return sequence.count("G") + sequence.count("C")
+
+
 def output_csv(output_file, sequences, parameters):
 	"""
 	Function to output statistics for sequence
@@ -139,13 +165,15 @@ def output_csv(output_file, sequences, parameters):
 	parameter_names = list(parameters.keys())
 	with open(output_file, "w") as obj_output:
 		writer = csv.writer(obj_output)
-		writer.writerow(["Name", "Length", "Invalid"] + parameter_names + INVALID_BASES)
+		writer.writerow(["Name", "Length", "Invalid", "GC", "GC%"] + parameter_names + INVALID_BASES)
 		for obj_sequence in sequences:
 			writer.writerow(
 				[
 					obj_sequence.name,
 					obj_sequence.length,
 					sum(obj_sequence.invalid_bases.values()),
+					obj_sequence.n_GC,
+					round(obj_sequence.n_GC / (obj_sequence.length - sum(obj_sequence.invalid_bases.values())), 3)
 				] \
 				+ [obj_sequence.parameters[parameter_name] for parameter_name in parameter_names] \
 				+ [obj_sequence.invalid_bases[invalid_base] for invalid_base in INVALID_BASES]
@@ -160,6 +188,7 @@ class Sequence:
 		self._parameters = {}
 		self._length = 0
 		self._invalid_bases = {}
+		self._n_GC = None
 
 		self.set_name(name)
 		self._parameters = {parameter_name: 0 for parameter_name in parameter_names}
@@ -181,6 +210,10 @@ class Sequence:
 	@property
 	def invalid_bases(self):
 		return self._invalid_bases
+
+	@property
+	def n_GC(self):
+		return self._n_GC
 
 
 	def set_name(self, name):
@@ -237,6 +270,20 @@ class Sequence:
 			self
 		"""
 		self._invalid_bases[name] = invalid_base
+		return self
+
+
+	def set_n_GC(self, n_GC):
+		"""
+		Method to set number of GC bases
+
+		Args:
+			n_GC (int): number of GC bases
+
+		Returns:
+			self
+		"""
+		self._n_GC = n_GC
 		return self
 
 
