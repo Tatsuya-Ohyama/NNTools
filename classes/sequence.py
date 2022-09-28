@@ -5,10 +5,6 @@ import sys
 import re
 
 from classes.parameter import Parameter
-<<<<<<< HEAD
-=======
-
->>>>>>> NNcalcTool.py
 
 
 # =============== class =============== #
