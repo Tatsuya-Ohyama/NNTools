@@ -14,7 +14,6 @@ import csv
 import re
 
 from classes.basicfunc import check_exist, check_overwrite
-from classes.parameter import Parameter
 
 
 
@@ -66,36 +65,86 @@ def read_parameter_file(parameter_file):
 	return parameters
 
 
-def read_fasta(fasta_file, parameters):
+def parse_name_pos(expressions):
+	"""
+	Function to parse names and position of sequence
+
+	Args:
+		expressions (list): [EXPRESSION, ...]
+
+	Returns:
+		dict: {name(str): [start(int), end(int)], ...}
+	"""
+	sequence_info = {}
+	for expression in expressions:
+		name = None
+		list_pos = [None,None]
+		if ":" in expression:
+			name, pos = expression.split(":", 1)
+			list_pos = [int(v) for v in pos.split("-", 1)]
+
+		else:
+			name = expression
+
+		sequence_info[name] = list_pos
+
+	return sequence_info
+
+
+def read_fasta(fasta_file, parameters, sequence_info):
+	"""
+	Function to read FASTA file and analyze
+
+	Args:
+		fasta_file (str): FASTA file path
+		parameters (dict): {"AA/TT": [AA, TT], ...}
+		sequence_info (dict, optional): names and position for sequences (Default: {} = all)
+
+	Returns:
+		list: [SequenceObject, ...]
+	"""
 	sequences = []
 	with open(fasta_file, "r") as obj_input:
 		sequence = ""
+		flag_read = False
 		for line_val in obj_input:
 			if line_val.startswith(">"):
 				if len(sequence) != 0:
-					sequences[-1].set_parameters(analysis_sequence(sequence, parameters))
+					if sequences[-1].name in sequence_info.keys():
+						sequence = sequence[sequence_info[sequences[-1].name][0]-1:sequence_info[sequences[-1].name][1]]
+
+					sequences[-1].set_parameters(count_pairs(sequence, parameters))
 					sequences[-1].set_length(len(sequence))
 					sequences[-1].set_invalid_bases(count_invalid_bases(sequence))
+					sequences[-1].set_n_GC(count_GC(sequence))
 					sequence = ""
 					sys.stderr.write("done.\n")
 
-				sequences.append(Sequence(line_val.strip().replace(">", "", 1), parameters.keys()))
-				sys.stderr.write("{0} ... ".format(sequences[-1].name))
-				sys.stderr.flush()
+				seq_name = line_val.strip().replace(">", "", 1)
+				if len(sequence_info.keys()) == 0 or seq_name in sequence_info.keys():
+					flag_read = True
+					sequences.append(Sequence(seq_name, parameters.keys()))
+					sys.stderr.write("{0} ... ".format(sequences[-1].name))
+					sys.stderr.flush()
+				else:
+					flag_read = False
+
 				continue
 
-			sequence += line_val.upper().strip()
+			if flag_read:
+				sequence += line_val.upper().strip()
 
 		if len(sequence) != 0:
-			sequences[-1].set_parameters(analysis_sequence(sequence, parameters))
+			sequences[-1].set_parameters(count_pairs(sequence, parameters))
 			sequences[-1].set_length(len(sequence))
 			sequences[-1].set_invalid_bases(count_invalid_bases(sequence))
+			sequences[-1].set_n_GC(count_GC(sequence))
 			sys.stderr.write("done.\n")
 
 	return sequences
 
 
-def analysis_sequence(sequence, parameters):
+def count_pairs(sequence, parameters):
 	"""
 	Function count NN pairs
 
@@ -128,6 +177,19 @@ def count_invalid_bases(sequence):
 	return {invalid_base: sequence.count(invalid_base) for invalid_base in INVALID_BASES}
 
 
+def count_GC(sequence):
+	"""
+	Functino to count GC bases
+
+	Args:
+		sequence (str): sequence
+
+	Returns:
+		int: number of GC bases
+	"""
+	return sequence.count("G") + sequence.count("C")
+
+
 def output_csv(output_file, sequences, parameters):
 	"""
 	Function to output statistics for sequence
@@ -140,13 +202,15 @@ def output_csv(output_file, sequences, parameters):
 	parameter_names = list(parameters.keys())
 	with open(output_file, "w") as obj_output:
 		writer = csv.writer(obj_output)
-		writer.writerow(["Name", "Length", "Invalid"] + parameter_names + INVALID_BASES)
+		writer.writerow(["Name", "Length", "Invalid", "GC", "GC%"] + parameter_names + INVALID_BASES)
 		for obj_sequence in sequences:
 			writer.writerow(
 				[
 					obj_sequence.name,
 					obj_sequence.length,
 					sum(obj_sequence.invalid_bases.values()),
+					obj_sequence.n_GC,
+					round(obj_sequence.n_GC / (obj_sequence.length - sum(obj_sequence.invalid_bases.values())), 3)
 				] \
 				+ [obj_sequence.parameters[parameter_name] for parameter_name in parameter_names] \
 				+ [obj_sequence.invalid_bases[invalid_base] for invalid_base in INVALID_BASES]
@@ -161,6 +225,7 @@ class Sequence:
 		self._parameters = {}
 		self._length = 0
 		self._invalid_bases = {}
+		self._n_GC = None
 
 		self.set_name(name)
 		self._parameters = {parameter_name: 0 for parameter_name in parameter_names}
@@ -182,6 +247,10 @@ class Sequence:
 	@property
 	def invalid_bases(self):
 		return self._invalid_bases
+
+	@property
+	def n_GC(self):
+		return self._n_GC
 
 
 	def set_name(self, name):
@@ -241,6 +310,20 @@ class Sequence:
 		return self
 
 
+	def set_n_GC(self, n_GC):
+		"""
+		Method to set number of GC bases
+
+		Args:
+			n_GC (int): number of GC bases
+
+		Returns:
+			self
+		"""
+		self._n_GC = n_GC
+		return self
+
+
 	def set_parameters(self, parameters):
 		"""
 		Method to set parameters
@@ -291,6 +374,7 @@ if __name__ == '__main__':
 	parser.add_argument("-f", dest="FASTA_FILES", metavar="SEQUENCE_FILE.fasta", nargs="+", required="--make-template" not in sys.argv, help="sequence file of FASTA format")
 	parser.add_argument("-p", dest="PARAMETER_FILE", metavar="PARAMETER_FILE.csv", required="--make-template" not in sys.argv, help="input file for parameters")
 	parser.add_argument("-o", dest="OUTPUT_FILE", metavar="OUTPUT_FILE.csv", required="--make-template" not in sys.argv, help="output file")
+	parser.add_argument("-n", dest="GENE_NAMES", metavar="GENE_NAMES", nargs="+", help="specify gene name and positions for target of analysis")
 	parser.add_argument("-O", dest="FLAG_OVERWRITE", action="store_true", default=False, help="overwrite forcibly")
 	parser.add_argument("--make-template", dest="FLAG_MAKE_TEMPLATE", action="store_true", default=False, help="make template files ({0}) and exit".format(TEMPLATE_PARAM))
 	args = parser.parse_args()
@@ -304,12 +388,21 @@ if __name__ == '__main__':
 	# reading parameters
 	parameters = read_parameter_file(args.PARAMETER_FILE)
 
+	# parse gene names and positions
+	sequence_info = {}
+	if args.GENE_NAMES is not None:
+		sequence_info = parse_name_pos(args.GENE_NAMES)
+
 	# reading sequence
 	sequences = []
 	for fasta_file in args.FASTA_FILES:
-		sequences.extend(read_fasta(fasta_file, parameters))
+		sequences.extend(read_fasta(fasta_file, parameters, sequence_info))
 
-	if args.FLAG_OVERWRITE == False:
-		check_overwrite(args.OUTPUT_FILE)
+	if len(sequences) != 0:
+		if args.FLAG_OVERWRITE == False:
+			check_overwrite(args.OUTPUT_FILE)
 
-	output_csv(args.OUTPUT_FILE, sequences, parameters)
+		output_csv(args.OUTPUT_FILE, sequences, parameters)
+
+	else:
+		sys.stderr.write("WARNING: No Data.\n")
