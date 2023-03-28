@@ -4,7 +4,7 @@
 import sys
 import re
 
-from classes.parameter import Parameter
+from mods.parameter import Parameter
 
 
 # =============== class =============== #
