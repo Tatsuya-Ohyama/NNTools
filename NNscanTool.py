@@ -102,7 +102,6 @@ def read_parameters(input_file):
 	base_pair = {}
 	with open(input_file, "r") as obj_input:
 		flag_read = False
-		flag_init = False
 		reader = csv.reader(obj_input)
 		for line_val in reader:
 			if "Parameter" in line_val[0]:
