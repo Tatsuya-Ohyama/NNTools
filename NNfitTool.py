@@ -16,17 +16,17 @@ import itertools
 from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_EVEN
 from joblib import Parallel, delayed
 
-from classes.basicfunc import check_exist, check_overwrite
-from classes.parameter import Parameter
-from classes.sequence import Sequence
-from classes.datagroup import DataGroup
+from mods.basicfunc import check_exist, check_overwrite
+from mods.parameter import Parameter
+from mods.sequence import Sequence
+from mods.datagroup import DataGroup
 
 
 
 # =============== variable =============== #
 DEFAULT_PARAMETER_TYPES = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "re:^T/^A"]
 DEFAULT_BASE_PAIRS = {"A": "T", "G": "C", "C": "G", "T": "A"}
-VERSION = "6.17.1"
+VERSION = "6.18.0"
 parameter_types = DEFAULT_PARAMETER_TYPES
 base_pair = DEFAULT_BASE_PAIRS
 iteration = 0
@@ -228,6 +228,76 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 	return parameter
 
 
+def read_parameters(input_file, parameters, directions):
+	"""
+	Function to read parameters
+
+	Args:
+		input_file (str): reference parameter file
+		parameters (list): [obj_Parameter, ...]
+		direcitons (list): [obj_Parameter, ...]
+
+	Returns:
+		list: [obj_Parameter, ...]
+		list: [[direction(int), ...], ...]
+	"""
+	flag_read = False
+	with open(input_file, "r") as obj_input:
+		reader = csv.reader(obj_input)
+		for row_val in reader:
+			if row_val[0].lower() == "parameter":
+				# read from "Parameter" at col 1
+				flag_read = True
+				continue
+
+			if flag_read:
+				if len(row_val) == 0 or row_val[0] == "":
+					# read stop by empty row
+					break
+
+				parameter_types.append(row_val[0])
+				row_val = [val for val in row_val if val != ""]
+				if "/" in row_val[0] and not row_val[0].startswith("init") \
+				and not row_val[0].startswith("length") \
+				and not row_val[0].startswith("symmetry") \
+				and not row_val[0].startswith("re:"):
+					# lexical analysis for parameter label to base pair
+					bases = row_val[0].split("/", 2)
+					tmp_base_pair = {}
+					tmp_base_pair[bases[0][0:1]] = bases[1][0:1]
+					tmp_base_pair[bases[0][1:2]] = bases[1][1:2]
+					for k, v in tmp_base_pair.items():
+						if k in base_pair.keys():
+							if base_pair[k] != v:
+								sys.stderr.write("ERROR: base pair are duplicated: {0}-{1} vs {0}-{2}.\n".format(k, base_pair[k], tmp_base_pair[k]))
+								sys.exit(1)
+						else:
+							base_pair[k] = v
+
+				parameters[0].append_parameter(row_val[0], float(row_val[1]))
+				parameters[1].append_parameter(row_val[0], float(row_val[2]))
+				parameters[2].append_parameter(row_val[0], float(row_val[3]))
+				if 7 <= len(row_val):
+					# change flag
+					row_val[4:7] = [True if x.capitalize() == "True" else False for x in row_val[4:7]]
+					parameters[0].set_change_stat(row_val[0], row_val[4])
+					parameters[1].set_change_stat(row_val[0], row_val[5])
+					parameters[2].set_change_stat(row_val[0], row_val[6])
+				else:
+					parameters[0].set_change_stat(row_val[0], True)
+					parameters[1].set_change_stat(row_val[0], True)
+					parameters[2].set_change_stat(row_val[0], True)
+
+				if len(row_val) == 10:
+					directions[0].append(float(row_val[7]))
+					directions[1].append(float(row_val[8]))
+					directions[2].append(float(row_val[9]))
+				else:
+					directions[0].append(0)
+					directions[1].append(0)
+					directions[2].append(0)
+	return parameters, directions
+
 
 # =============== main =============== #
 if __name__ == '__main__':
@@ -289,71 +359,13 @@ e.g., "reg:./." (length parameter)
 		base_pair = {}
 		parameter_types = []
 		check_exist(args.REF_PARAM, 2)
-
-		flag_read = False
-		flag_init = False
-		pos_sep = 0
-		pos_offset = 1
-		with open(args.REF_PARAM, "r") as obj_input:
-			reader = csv.reader(obj_input)
-			for row_val in reader:
-				if row_val[0].lower() == "parameter":
-					# read from "Parameter" at col 1
-					flag_read = True
-					continue
-
-				if flag_read:
-					if len(row_val) == 0 or row_val[0] == "":
-						# read stop by empty row
-						break
-
-					parameter_types.append(row_val[0])
-					row_val = [val for val in row_val if val != ""]
-					if "/" in row_val[0] and not row_val[0].startswith("init") \
-					and not row_val[0].startswith("length") \
-					and not row_val[0].startswith("symmetry") \
-					and not row_val[0].startswith("re:"):
-						# lexical analysis for parameter label to base pair
-						bases = row_val[0].split("/", 2)
-						tmp_base_pair = {}
-						tmp_base_pair[bases[0][0:1]] = bases[1][0:1]
-						tmp_base_pair[bases[0][1:2]] = bases[1][1:2]
-						for k, v in tmp_base_pair.items():
-							if k in base_pair.keys():
-								if base_pair[k] != v:
-									sys.stderr.write("ERROR: base pair are duplicated: {0}-{1} vs {0}-{2}.\n".format(k, base_pair[k], tmp_base_pair[k]))
-									sys.exit(1)
-							else:
-								base_pair[k] = v
-
-					parameters[0].append_parameter(row_val[0], float(row_val[1]))
-					parameters[1].append_parameter(row_val[0], float(row_val[2]))
-					parameters[2].append_parameter(row_val[0], float(row_val[3]))
-					if 7 <= len(row_val):
-						# change flag
-						row_val[4:7] = [True if x.capitalize() == "True" else False for x in row_val[4:7]]
-						parameters[0].set_change_stat(row_val[0], row_val[4])
-						parameters[1].set_change_stat(row_val[0], row_val[5])
-						parameters[2].set_change_stat(row_val[0], row_val[6])
-					else:
-						parameters[0].set_change_stat(row_val[0], True)
-						parameters[1].set_change_stat(row_val[0], True)
-						parameters[2].set_change_stat(row_val[0], True)
-
-					if len(row_val) == 10:
-						directions[0].append(float(row_val[7]))
-						directions[1].append(float(row_val[8]))
-						directions[2].append(float(row_val[9]))
-					else:
-						directions[0].append(0)
-						directions[1].append(0)
-						directions[2].append(0)
+		parameters, directions = read_parameters(args.REF_PARAM, parameters, directions)
 
 	else:
 		# define starting parameter by defualt value
-		for parameter in parameters:
+		for obj_parameter in parameters:
 			for parameter_type in parameter_types:
-				parameter.append_parameter(parameter_type, 0.0)
+				obj_parameter.append_parameter(parameter_type, 0.0)
 
 	parameters_init = [copy.deepcopy(parameter) for parameter in parameters]
 
