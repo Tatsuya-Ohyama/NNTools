@@ -233,11 +233,11 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description="NNfitTool.py", formatter_class=argparse.RawTextHelpFormatter)
 	input_group = parser.add_argument_group("Input")
-	input_group.add_argument("-x", dest="experiment_file", metavar="EXP.csv", required="--make-template" not in sys.argv,
+	input_group.add_argument("-x", dest="EXPERIMENT_FILE", metavar="EXP.csv", required="--make-template" not in sys.argv,
 	help = """sequence and experimental value file
 column: Label, Sequence, dH, dH(error), dS, dS(error), dG, and dG(error)
 """)
-	input_group.add_argument("-r", dest="ref_param", metavar="REF_PARAM.csv",
+	input_group.add_argument("-r", dest="REF_PARAM", metavar="REF_PARAM.csv",
 	help = """referenced parameter values
 column: `Parameter`, `dH`, `dS`, `dG`, space, `dH (change)`, `dS (change)`, `dG (change)`, space, `dH (Direction)`, `dS (Direction)`, and `dG (Direction)`
 `Parameter`: AA/TT, GC/CG, or etc, and re: (regexp) and reg: (counted pattern by regexp)
@@ -285,16 +285,16 @@ e.g., "reg:./." (length parameter)
 	directions = [[] for idx in range(len(exp_label))]
 
 	# loading reference parameter
-	if args.ref_param is not None:
+	if args.REF_PARAM is not None:
 		base_pair = {}
 		parameter_types = []
-		check_exist(args.ref_param, 2)
+		check_exist(args.REF_PARAM, 2)
 
 		flag_read = False
 		flag_init = False
 		pos_sep = 0
 		pos_offset = 1
-		with open(args.ref_param, "r") as obj_input:
+		with open(args.REF_PARAM, "r") as obj_input:
 			reader = csv.reader(obj_input)
 			for row_val in reader:
 				if row_val[0].lower() == "parameter":
@@ -366,9 +366,9 @@ e.g., "reg:./." (length parameter)
 
 
 	# reading sequence and experimental data
-	check_exist(args.experiment_file, 2)
+	check_exist(args.EXPERIMENT_FILE, 2)
 	exp_datas = [DataGroup(label).set_base_pair(base_pair) for label in exp_label]
-	with open(args.experiment_file, "r") as obj_input:
+	with open(args.EXPERIMENT_FILE, "r") as obj_input:
 		reader = csv.reader(obj_input)
 
 		# Ignore line number 1 (header) in CSV
@@ -542,8 +542,8 @@ e.g., "reg:./." (length parameter)
 		writer = csv.writer(obj_output)
 		writer.writerow(["<< Input >>"])
 		writer.writerow(["Program version", VERSION])
-		writer.writerow(["Experimental data", args.experiment_file])
-		writer.writerow(["Reference parameter", args.ref_param])
+		writer.writerow(["Experimental data", args.EXPERIMENT_FILE])
+		writer.writerow(["Reference parameter", args.REF_PARAM])
 		writer.writerow(["Initial iteration", args.INITIAL_INCREMENT])
 		writer.writerow(["Increment threshold", args.THRESHOLD_INCREMENT])
 		writer.writerow(["Iteration (whole)", args.OPTIMIZE_COUNT])
