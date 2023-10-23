@@ -160,5 +160,11 @@ Copyright (c) 2019 Tatsuya Ohyama
 
 
 ## ChangeLog
-### Ver. 6.19 (2022/3/31)
+### Ver. 6.21 (2023-10-23)
+* fix bug that do not use medium of parameter for prediction value at `<< Sequence >>` section
+
+### Ver. 6.20 (2023-09-26)
+* small changes for NNfitTool.py
+
+### Ver. 6.19 (2022-03-31)
 * add README.md
