@@ -169,13 +169,14 @@ class Sequence:
 			return self._cache_freq
 
 
-	def get_energy(self, obj_parameter, base_pairs):
+	def get_energy(self, obj_parameter, base_pairs, data_type="raw"):
 		"""
 		Method to return energy value
 
 		Args:
 			obj_parameter (objParameter): Paramete object
 			base_pairs (dict): base pairs
+			data_type (str, optional): raw ([value, minimum value with error, maximum value with error]) or fix (value, error+/-) (Default: "raw")
 
 		Returns:
 			float: energy value
@@ -183,6 +184,6 @@ class Sequence:
 		# calculate energy
 		energy = 0.0
 		freq = self.get_freq(obj_parameter, base_pairs)
-		energy = sum([cnt_pair * obj_parameter.get_parameter(parameter_type)[0] for parameter_type, cnt_pair in freq.items()])
+		energy = sum([cnt_pair * obj_parameter.get_parameter(parameter_type, data_type)[0] for parameter_type, cnt_pair in freq.items()])
 
 		return energy

@@ -26,7 +26,7 @@ from mods.datagroup import DataGroup
 # =============== variable =============== #
 DEFAULT_PARAMETER_TYPES = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "re:^T/^A"]
 DEFAULT_BASE_PAIRS = {"A": "T", "G": "C", "C": "G", "T": "A"}
-VERSION = "6.18.0"
+VERSION = "6.21.0"
 parameter_types = DEFAULT_PARAMETER_TYPES
 base_pair = DEFAULT_BASE_PAIRS
 iteration = 0
@@ -629,9 +629,9 @@ e.g., "reg:./." (length parameter)
 
 		for sequence, dH, dS, dG in zip(
 				exp_datas[0].get_sequence(),
-				exp_datas[0].get_energy(flag_sequence=True, obj_parameters=[parameters[0]]),
-				exp_datas[1].get_energy(flag_sequence=True, obj_parameters=[parameters[1]]),
-				exp_datas[2].get_energy(flag_sequence=True, obj_parameters=[parameters[2]])):
+				exp_datas[0].get_energy(flag_sequence=True, obj_parameters=[parameters[0]], data_type="fix"),
+				exp_datas[1].get_energy(flag_sequence=True, obj_parameters=[parameters[1]], data_type="fix"),
+				exp_datas[2].get_energy(flag_sequence=True, obj_parameters=[parameters[2]], data_type="fix")):
 			name = sequence.name
 			seq = sequence.get_sequence("string")
 			exp_dH = dH[1]

@@ -122,13 +122,14 @@ class DataGroup:
 			return [x.get_sequence() for x in self._sequences]
 
 
-	def get_energy(self, flag_sequence=False, obj_parameters=[]):
+	def get_energy(self, flag_sequence=False, obj_parameters=[], data_type="raw"):
 		"""
 		Method to return experimental value list
 
 		Args:
 			flag_sequence (bool, optional): return energy with sequence (Default: False)
 			obj_parameters (list, optional): Paramete robject list (Default: [])
+			data_type (str, optional): raw ([value, minimum value with error, maximum value with error]) or fix (value, error+/-) (Default: "raw")
 
 		Returns:
 			list: energy value
@@ -141,7 +142,7 @@ class DataGroup:
 			data.append(self._energy[idx])
 			data.append(self._error[idx])
 			for parameter in obj_parameters:
-				data.append(self._sequences[idx].get_energy(parameter, self._base_pairs))
+				data.append(self._sequences[idx].get_energy(parameter, self._base_pairs, data_type=data_type))
 			energy_data.append(data)
 		return energy_data
 
