@@ -18,7 +18,6 @@ class DataGroup:
 		self._energy = []
 		self._error = []
 		self._error_sign = []
-		self._base_pairs = {}
 		self._is_fitting = None
 
 		self.set_name(name)
@@ -45,10 +44,6 @@ class DataGroup:
 		return self._error_sign
 
 	@property
-	def base_pairs(self):
-		return self._base_pairs
-
-	@property
 	def is_fitting(self):
 		return self._is_fitting
 
@@ -64,20 +59,6 @@ class DataGroup:
 			self
 		"""
 		self._name = name
-		return self
-
-
-	def set_base_pair(self, base_pairs):
-		"""
-		Method to set base pair information
-
-		Args:
-			base_pairs (dict): base pairs
-
-		Returns:
-			self
-		"""
-		self._base_pairs = base_pairs
 		return self
 
 
@@ -108,7 +89,7 @@ class DataGroup:
 
 	def get_sequence(self, data_type=None):
 		"""
-		Method to return Sequence object
+		Method to return sequence information
 
 		Args:
 			data_type (None or str, optional): None or "sequence" (Default: None)
@@ -119,7 +100,23 @@ class DataGroup:
 		if data_type is None:
 			return self._sequences
 		elif data_type == "sequence":
-			return [x.get_sequence() for x in self._sequences]
+			return [obj_sequence.get_sequence() for obj_sequence in self._sequences]
+
+
+	def get_complement(self, data_type=None):
+		"""
+		Method to return complementary sequence information
+
+		Args:
+			data_type (None or str, optional): None or "sequence" (Default: None)
+
+		Returns:
+			list of objSequence for None or sequence string list for "sequence"
+		"""
+		if data_type is None:
+			return self._complement
+		elif data_type == "sequence":
+			return [obj_sequence.get_complement() for obj_sequence in self._sequences]
 
 
 	def get_energy(self, flag_sequence=False, obj_parameters=[], data_type="raw"):
@@ -142,7 +139,7 @@ class DataGroup:
 			data.append(self._energy[idx])
 			data.append(self._error[idx])
 			for parameter in obj_parameters:
-				data.append(self._sequences[idx].get_energy(parameter, self._base_pairs, data_type=data_type))
+				data.append(self._sequences[idx].get_energy(parameter, data_type=data_type))
 			energy_data.append(data)
 		return energy_data
 
@@ -164,7 +161,7 @@ class DataGroup:
 			if type(error_sign) != list:
 				error_sign = self._error_sign
 			x = np.array([self._energy[idx] + self._error[idx] * error_sign[idx] for idx in range(len(self._energy))])
-			y = np.array([sequence.get_energy(obj_parameter, self._base_pairs) for sequence in self._sequences])
+			y = np.array([sequence.get_energy(obj_parameter) for sequence in self._sequences])
 			result = [float(x) for x in np.polyfit(x, y, deg).tolist()]
 			if y[y == 0.0].shape[0] == len(self._sequences) or np.std(x) == 0.0 or np.std(y) == 0.0:
 				result.append(0.0)
@@ -202,5 +199,5 @@ class DataGroup:
 		elif mode == "diff_square":
 			return result[8]
 		else:
-			sys.stderr.write("ERROR: undefined mode at get_stat() in DataGroup class.\n")
+			sys.stderr.write("ERROR: Undefined mode at get_stat() in DataGroup class.\n")
 			sys.exit(1)
