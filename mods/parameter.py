@@ -14,6 +14,7 @@ class Parameter:
 		self._name = ""
 		self._parameters = {}	# key: parameter_type, value: [raw, +error, -error]
 		self._change = {}
+		self._one_direction = False
 
 
 	@property
@@ -27,6 +28,10 @@ class Parameter:
 	@property
 	def change(self):
 		return self._change
+
+	@property
+	def one_direction(self):
+		return self._one_direction
 
 
 	def set_name(self, name):
@@ -90,6 +95,20 @@ class Parameter:
 			sys.stderr.write("ERROR: Undefined parameter_type in set_parameter() of ParameterData class ({0}).\n".format(parameter_type))
 			sys.exit(1)
 
+		return self
+
+
+	def set_one_direction(self, one_direction):
+		"""
+		Method to set one_direction
+
+		Args:
+			one_direction (bool): _description_
+
+		Returns:
+			self
+		"""
+		self._one_direction = one_direction
 		return self
 
 

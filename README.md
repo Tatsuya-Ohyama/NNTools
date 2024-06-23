@@ -50,7 +50,7 @@ $ NNcalcTool.py [-h] -s SEQUENCE_FILE.csv -p PARAMETER_FILE.csv -o OUTPUT_FILE.c
 ### NNfitTool.py
 
 ```sh
-$ NNfitTool.py [-h] -x EXP.csv [-r REF_PARAM.csv] -o OUTPUT.csv [-O] [-d THRESHOLD] [-i INITIAL_INCREMENT] [-T TEMPERATURE] [-m EVALUATION_METHOD] [-S] [-I LOOP_COUNT] [-e | -es] [-t THREAD] [--verbose] [--make-template]
+$ NNfitTool.py [-h] -x EXP.csv -r REF_PARAM.csv -o OUTPUT.csv [-O] [-d THRESHOLD] [-i INITIAL_INCREMENT] [-T TEMPERATURE] [-m EVALUATION_METHOD] [-S] [-I LOOP_COUNT] [--one-direction] [-e | -es] [-t THREAD] [--verbose]
 ```
 
 * Common
@@ -108,6 +108,8 @@ $ NNfitTool.py [-h] -x EXP.csv [-r REF_PARAM.csv] -o OUTPUT.csv [-O] [-d THRESHO
 		: consider with experimental value with error
 	* `-es` (not implement)
 		: strictly consider with experimental value with error
+	* `--one-direction`
+		: Do not search for reverse order pattern (For example, this program searches AC/TG and reverse order pattern GT/CA as the same pattern. This option does not allow it.) (For mismatch or manual operation)
 
 * Misc:
 	* `-t THREAD`
@@ -146,6 +148,7 @@ $ NNcountTool.py [-h] -f SEQUENCE_FILE.fasta [SEQUENCE_FILE.fasta ...] -p PARAME
 ## Requirement
 * Python 3
 	* numpy
+	* pandas
 	* joblib
 
 
@@ -160,6 +163,14 @@ Copyright (c) 2019 Tatsuya Ohyama
 
 
 ## ChangeLog
+### Ver. 7.1 (2024-06-23)
+* add `--one-direction` option.
+* change generation algorithm of pair from sequence.
+
+### Ver. 7.0 (2024-06-02)
+* support for mismatch sequence
+	* add `template_exp_mismatch.csv`
+
 ### Ver. 6.21 (2023-10-23)
 * fix bug that do not use medium of parameter for prediction value at `<< Sequence >>` section
 

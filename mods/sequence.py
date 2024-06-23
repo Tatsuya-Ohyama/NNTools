@@ -96,83 +96,63 @@ class Sequence:
 		return self
 
 
-	def get_sequence(self, sequence_type="list"):
+	def get_sequence(self, data_type="list"):
 		"""
 		Method to return sequence
 
 		Args:
-			sequence_type (str, optional): "list" or "string" (Default: "list")
+			data_type (str, optional): "list" or "string" (Default: "list")
 
 		Returns:
 			str: sequence
 		"""
-		if sequence_type == "string":
+		if data_type == "string":
 			return "".join(self._sequence)
-		elif sequence_type == "list":
+		elif data_type == "list":
 			return self._sequence
 		else:
-			sys.stderr.write("ERROR: Undefined sequence_type at get_sequence() in Sequence class.\n")
+			sys.stderr.write("ERROR: Undefined data_type at get_sequence() in Sequence class.\n")
 			sys.exit(1)
 
 
-	def get_complement(self, sequence_type="list"):
+	def get_complement(self, data_type="list"):
 		"""
 		Method to return complement sequence
 
 		Args:
-			sequence_type (str, optional): "list" or "string" (Default: "list")
+			data_type (str, optional): "list" or "string" (Default: "list")
 
 		Returns:
 			list or str: sequence
 		"""
-		if sequence_type == "string":
+		if data_type == "string":
 			return "".join(self._complement)
-		elif sequence_type == "list":
+		elif data_type == "list":
 			return self._complement
 		else:
 			sys.stderr.write("ERROR: Undefined sequence_type at get_sequence() in Sequence class.\n")
 			sys.exit(1)
 
 
-	def get_complement(self, sequence_type="list"):
-		"""
-		Method to return complementary sequence
-
-		Args:
-			sequence_type (str, optional): "list" or "string" (Default: "list")
-
-		Returns:
-			str: complementary sequence
-		"""
-		if sequence_type == "string":
-			return "".join(self._complement)
-		elif sequence_type == "list":
-			return self._complement
-		else:
-			sys.stderr.write("ERROR: Undefined sequence_type at get_sequence() in Sequence class.\n")
-			sys.exit(1)
-
-
-	def get_freq(self, parameter_types, flag_cache=True):
+	def get_freq(self, obj_parameter, flag_cache=True):
 		"""
 		Method to return pair frequency
 
 		Args:
-			parameter_types (list or objParameter): list for parameter types or Parameter object
+			obj_parameter(Parameter object): parameter object
 			flag_cache (bool, optional): use cache data (Default: True)
 
 		Returns:
 			list: pair frequency
 		"""
-		if type(parameter_types) == Parameter:
-			parameter_types = parameter_types.get_parameter(data_type="name")
+		parameter_types = obj_parameter.get_parameter(data_type="name")
 
 		if flag_cache and parameter_types == self._cache_parameter_types:
 			# flag_cache is True and condition is the same => use cache
 			return self._cache_freq
 
 		else:
-			# build or rebuild parameter list
+			# build parameter list
 			self._cache_parameter_types = parameter_types
 			self._cache_freq = {param: 0 for param in parameter_types}
 
@@ -200,11 +180,10 @@ class Sequence:
 				elif param.startswith("re:"):
 					# regexp parameter
 					re_exps = param.replace("re:", "").split("/")
-					flag_match = 0
-					for regexp, sequence in zip(re_exps, ["".join(self._sequence), "".join(self._complement)]):
-						if re.search(regexp, sequence):
-							flag_match += 1
-					if flag_match == 2:
+					obj_match1 = re.search(re_exps[0], sequence)
+					obj_match2 = re.search(re_exps[1], complement)
+
+					if obj_match1 and obj_match2:
 						# match sequence and complementary sequence
 						self._cache_freq[param] += 1
 
@@ -222,34 +201,21 @@ class Sequence:
 				elif "/" in param:
 					# search in correct order
 					query_seq1, query_seq1c = param.split("/", 1)
-					pos_s = 0
-					while pos_s <= len(sequence):
-						if query_seq1 not in sequence[pos_s:]:
-							break
-
-						pos_m = sequence[pos_s:].index(query_seq1)
-						if query_seq1c == complement[pos_s+pos_m:pos_s+pos_m+len(query_seq1c)]:
-							self._cache_freq[param] += 1
-
-						pos_s = pos_s + pos_m + 1
+					length_pattern = len(query_seq1)
+					pairs = ["/".join([sequence[i:i+length_pattern], complement[i:i+length_pattern]]) for i in range(len(sequence)-length_pattern+1)]
+					self._cache_freq[param] += pairs.count(param)
 
 					# search in reverse order
-					query_seq2, query_seq2c = "".join(list(reversed(query_seq1c))), "".join(list(reversed(query_seq1)))
+					if obj_parameter.one_direction:
+						continue
 
+					query_seq2, query_seq2c = "".join(list(reversed(query_seq1c))), "".join(list(reversed(query_seq1)))
 					if query_seq1 == query_seq2:
 						# skip reverse order search at symmetry parameter
 						continue
 
-					pos_s = 0
-					while pos_s <= len(sequence):
-						if query_seq2 not in sequence[pos_s:]:
-							break
-
-						pos_m = sequence[pos_s:].index(query_seq2)
-						if query_seq2c == complement[pos_s+pos_m:pos_s+pos_m+len(query_seq2c)]:
-							self._cache_freq[param] += 1
-
-						pos_s = pos_s + pos_m + 1
+					pairs_reverse = [v[::-1] for v in pairs]
+					self._cache_freq[param] += pairs_reverse.count(param)
 
 				else:
 					sys.stderr.write("ERROR: Undefined parameter at get_freq() in Sequence class ({0}).\n".format(param))

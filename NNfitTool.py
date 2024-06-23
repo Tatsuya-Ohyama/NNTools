@@ -10,7 +10,6 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 import argparse
 import csv
-import numpy as np
 import copy
 import itertools
 from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_EVEN
@@ -25,13 +24,13 @@ from mods.datagroup import DataGroup
 
 
 # =============== variable =============== #
-VERSION = "7.0"
+VERSION = "7.1"
 iteration = 0
 
 
 
 # =============== function =============== #
-def calculation_worker(parameter, exp_data, mode, increment, threshold_increment, init_direction, verbose, error_sign = None):
+def calculation_worker(parameter, exp_data, mode, increment, threshold_increment, init_direction, verbose, error_sign=None):
 	# calculate parameter
 	# loop for energy type: dH, dS, and dG
 	direction = copy.deepcopy(init_direction)
@@ -183,9 +182,9 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 		print("===== Comparing experimental data =====")
 		print("{0:^20} {1:^8} {2:^8} {3:^8}".format("Sequence", "Exp.", "Predict", "Diff"))
 		print("{0:-^20} {1:-^8} {2:-^8} {3:-^8}".format("", "", "", ""))
-		print(exp_data.get_energy(True, [parameters[2]]))
+		print(exp_data.get_energy(flag_sequence=True, obj_parameters=[parameters[2]]))
 		print(exp_data.get_stat(parameters[2], "diff_abs"))
-		for row, diff in zip(exp_data.get_energy(True, [parameters[2]]), exp_data.get_stat(parameters[2], "diff_abs")):
+		for row, diff in zip(exp_data.get_energy(flag_sequence=True, parameters=[parameters[2]]), exp_data.get_stat(parameters[2], "diff_abs")):
 			print("{0:<20} {1:>8.3f} {2:>8.3f} {3:>8.3f}".format(row[0], row[1], row[2], diff))
 
 		print("")
@@ -240,6 +239,10 @@ def read_parameters(input_file, parameters, directions):
 				and not row_val[0].startswith("reg:"):
 					# lexical analysis for parameter label to base pair
 					seq1, seq2 = row_val[0].split("/", 1)
+					if len(seq1) != len(seq2):
+						sys.stderr.write("ERROR: Length of pattern `{}` does not match.\n".format(row_val[0]))
+						sys.exit(1)
+
 					list_seq1 = list(seq1)
 					list_seq2 = list(seq2)
 					for base1, base2 in zip(list_seq1, list_seq2):
@@ -317,6 +320,7 @@ e.g., "reg:./." (length parameter)
 	config_group.add_argument("-m", dest="MODE", metavar="EVALUATION_METHOD", default="diff_square", choices=["r", "r2", "diff_mean", "diff_std", "diff_sum", "diff_square"], help="evaluation method (r, r2, diff_mean, diff_std, diff_sum, diff_square) (Default: diff_square)")
 	config_group.add_argument("-S", dest="FLAG_SEPARATE", action="store_true", default=False, help="Separately calculate dS (Default: OFF (dS is calculated by Gibbs free energy equation))")
 	config_group.add_argument("-I", dest="OPTIMIZE_COUNT", metavar="LOOP_COUNT", type=int, default=1, help="the number of looping optimize (Default: 1)")
+	config_group.add_argument("--one-direction", dest="FLAG_ONE_DIRECTION", action="store_true", default=False, help="Do not search for reverse order pattern (For example, this program searches AC/TG and reverse order pattern GT/CA as the same pattern. This option does not allow it.)")
 	error_group = config_group.add_mutually_exclusive_group()
 	error_group.add_argument("-e", dest="FLAG_ERROR", action="store_true", default=False, help="consider with experimental value with error")
 	error_group.add_argument("-es", dest="FLAG_ERROR_STRICT", action="store_true", default=False, help="strictly consider with experimental value with error")
@@ -345,7 +349,8 @@ e.g., "reg:./." (length parameter)
 	parameter_types = []
 	check_exist(args.REF_PARAM, 2)
 	parameters, directions, base_pairs = read_parameters(args.REF_PARAM, parameters, directions)
-
+	for obj_parameter in parameters:
+		obj_parameter.set_one_direction(args.FLAG_ONE_DIRECTION)
 
 	# reading sequence and experimental data
 	check_exist(args.EXPERIMENT_FILE, 2)
@@ -389,13 +394,13 @@ e.g., "reg:./." (length parameter)
 			# multi-thread
 			parameters_tmp = Parallel(n_jobs = args.THREAD)([
 				delayed(calculation_worker)(
-					parameters[exp_idx],
-					exp_datas[exp_idx],
-					args.MODE,
-					args.INITIAL_INCREMENT,
-					args.THRESHOLD_INCREMENT,
-					directions[exp_idx],
-					0
+					parameter=parameters[exp_idx],
+					exp_data=exp_datas[exp_idx],
+					mode=args.MODE,
+					increment=args.INITIAL_INCREMENT,
+					threshold_increment=args.THRESHOLD_INCREMENT,
+					init_direction=directions[exp_idx],
+					verbose=0
 				) for exp_idx in target_list])
 			if args.FLAG_SEPARATE:
 				parameters = parameters_tmp
@@ -407,13 +412,13 @@ e.g., "reg:./." (length parameter)
 			# single-thread
 			for exp_idx in target_list:
 				parameters[exp_idx] = calculation_worker(
-					parameters[exp_idx],
-					exp_datas[exp_idx],
-					args.MODE,
-					args.INITIAL_INCREMENT,
-					args.THRESHOLD_INCREMENT,
-					directions[exp_idx],
-					args.VERBOSE
+					parameter=parameters[exp_idx],
+					exp_data=exp_datas[exp_idx],
+					mode=args.MODE,
+					increment=args.INITIAL_INCREMENT,
+					threshold_increment=args.THRESHOLD_INCREMENT,
+					init_direction=directions[exp_idx],
+					verbose=args.VERBOSE
 				)
 
 		# optimize for parameter by experimental values with error
@@ -427,14 +432,14 @@ e.g., "reg:./." (length parameter)
 				# multi-thread
 				new_parameters = Parallel(n_jobs=args.THREAD)([
 					delayed(calculation_worker)(
-						parameters[exp_idx],
-						exp_datas[exp_idx],
-						args.MODE,
-						args.INITIAL_INCREMENT,
-						args.THRESHOLD_INCREMENT,
-						directions[exp_idx],
-						0,
-						sign
+						parameter=parameters[exp_idx],
+						exp_data=exp_datas[exp_idx],
+						mode=args.MODE,
+						increment=args.INITIAL_INCREMENT,
+						threshold_increment=args.THRESHOLD_INCREMENT,
+						init_direction=directions[exp_idx],
+						verbose=0,
+						error_sign=sign
 					) for exp_idx in target_list
 						for sign in [negative, positive]
 				])
@@ -445,14 +450,14 @@ e.g., "reg:./." (length parameter)
 					# exp values with errors
 					for sign in [negative, positive]:
 						new_parameters.append(calculation_worker(
-							parameters[exp_idx],
-							exp_datas[exp_idx],
-							args.MODE,
-							args.INITIAL_INCREMENT,
-							args.THRESHOLD_INCREMENT,
-							directions[exp_idx],
-							args.VERBOSE,
-							sign
+							parameter=parameters[exp_idx],
+							exp_data=exp_datas[exp_idx],
+							mode=args.MODE,
+							increment=args.INITIAL_INCREMENT,
+							threshold_increment=args.THRESHOLD_INCREMENT,
+							init_direction=directions[exp_idx],
+							verbose=args.VERBOSE,
+							error_sign=sign
 						))
 
 			for idx, exp_idx in enumerate(target_list):
@@ -474,14 +479,14 @@ e.g., "reg:./." (length parameter)
 							cnt = 0
 							parameter_c = Parallel(n_jobs = args.THREAD)([
 								delayed(calculation_worker)(
-									parameters[exp_idx],
-									exp_datas[exp_idx],
-									args.MODE,
-									args.INITIAL_INCREMENT,
-									args.THRESHOLD_INCREMENT,
-									directions[exp_idx],
-									0,
-									exp_error_pattern
+									parameter=parameters[exp_idx],
+									exp_data=exp_datas[exp_idx],
+									mode=args.MODE,
+									increment=args.INITIAL_INCREMENT,
+									threshold_increment=args.THRESHOLD_INCREMENT,
+									init_direction=directions[exp_idx],
+									verbose=0,
+									error_sign=exp_error_pattern
 								) for error_pattern in calc_set
 							])
 							for new_parameter in parameter_c:
@@ -492,14 +497,14 @@ e.g., "reg:./." (length parameter)
 					if len(calc_set) != 0:
 						parameter_c = Parallel(n_jobs=args.THREAD)([
 							delayed(calculation_worker)(
-								parameters[exp_idx],
-								exp_datas[exp_idx],
-								args.MODE,
-								args.INITIAL_INCREMENT,
-								args.THRESHOLD_INCREMENT,
-								directions[exp_idx],
-								0,
-								exp_error_pattern
+								parameter=parameters[exp_idx],
+								exp_data=exp_datas[exp_idx],
+								mode=args.MODE,
+								increment=args.INITIAL_INCREMENT,
+								threshold_increment=args.THRESHOLD_INCREMENT,
+								init_direction=directions[exp_idx],
+								verbose=0,
+								error_sign=exp_error_pattern
 							) for error_pattern in calc_set
 						])
 						for new_parameter in parameter_c:
@@ -510,14 +515,14 @@ e.g., "reg:./." (length parameter)
 					# exp values with error
 					for exp_error_pattern in itertools.product([-1, 1], repeat=len(exp_datas[0].get_sequence())):
 						new_parameter = calculation_worker(
-							parameters[exp_idx],
-							exp_datas[exp_idx],
-							args.MODE,
-							args.INITIAL_INCREMENT,
-							args.THRESHOLD_INCREMENT,
-							directions[exp_idx],
-							args.VERBOSE,
-							exp_error_pattern
+							parameter=parameters[exp_idx],
+							exp_data=exp_datas[exp_idx],
+							mode=args.MODE,
+							increment=args.INITIAL_INCREMENT,
+							threshold_increment=args.THRESHOLD_INCREMENT,
+							init_direction=directions[exp_idx],
+							verbose=args.VERBOSE,
+							error_sign=exp_error_pattern
 						)
 						parameters[exp_idx].update_parameter_error("all", new_parameter.get_parameter())
 
@@ -631,7 +636,7 @@ e.g., "reg:./." (length parameter)
 			diff_dH = pred_dH - exp_dH
 			diff_dS = pred_dS - exp_dS
 			diff_dG = pred_dG - exp_dG
-			freq = sequence.get_freq(parameter_types)
+			freq = sequence.get_freq(parameters[0])
 			writer.writerow([name, seqA, seqB, exp_dH, exp_dS, exp_dG, pred_dH, pred_dS, pred_dG, diff_dH, diff_dS, diff_dG] + [""] + [freq[parameter_type] for parameter_type in parameter_types])
 		writer.writerow([""])
 
