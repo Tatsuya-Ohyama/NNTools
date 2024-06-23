@@ -87,7 +87,7 @@ class Parameter:
 				else:
 					self._parameters[parameter_type] = [float(parameter_val)] * 3
 		else:
-			sys.stderr.write("ERROR: undefined parameter_type in set_parameter() of ParameterData class ({0}).\n".format(parameter_type))
+			sys.stderr.write("ERROR: Undefined parameter_type in set_parameter() of ParameterData class ({0}).\n".format(parameter_type))
 			sys.exit(1)
 
 		return self
@@ -111,7 +111,7 @@ class Parameter:
 			parameter_values = parameter_value
 		else:
 			if parameter_type not in self._parameters.keys():
-				sys.stderr("ERROR: undefined parameter_type at set_parameter_error() in Parameter class ({0}).\n".format(parameter_type))
+				sys.stderr("ERROR: Undefined parameter_type at set_parameter_error() in Parameter class ({0}).\n".format(parameter_type))
 				sys.exit(1)
 			parameter_types = [parameter_type]
 			parameter_values = [parameter_value]
@@ -160,7 +160,7 @@ class Parameter:
 		if parameter_name in self._parameters.keys():
 			del(self._parameters[parameter_name])
 		else:
-			sys.stderr.write("ERROR: {0} does not found.\n".format(parameter_name))
+			sys.stderr.write("ERROR: Not found `{0}`.\n".format(parameter_name))
 			sys.exit(1)
 		return self
 
@@ -190,7 +190,7 @@ class Parameter:
 		elif parameter_type in self._change.keys():
 			return self._change[parameter_type]
 		else:
-			sys.stderr.write("ERROR: undefined parameter type at is_chage() in Parameter class ({0}).\n".format(parameter_type))
+			sys.stderr.write("ERROR: Undefined parameter type at is_chage() in Parameter class ({0}).\n".format(parameter_type))
 			sys.exit(1)
 
 
@@ -215,7 +215,7 @@ class Parameter:
 		elif data_type == "name":
 			return self._parameters.keys()
 		else:
-			sys.stderr.write("ERROR: undefined data_type at get_parameter() in Parameter class.\n".format(data_type))
+			sys.stderr.write("ERROR: Undefined data_type at get_parameter() in Parameter class.\n".format(data_type))
 			sys.exit(1)
 
 		if parameter_type is None:
@@ -229,5 +229,5 @@ class Parameter:
 				return values[parameter_key]
 			else:
 				# all parameters are specified
-				sys.stderr.write("ERROR: undefined parameter_type in get_parameter() in Parameter class ({0}).\n".format(parameter_type))
+				sys.stderr.write("ERROR: Undefined parameter_type in get_parameter() in Parameter class ({0}).\n".format(parameter_type))
 				sys.exit(1)

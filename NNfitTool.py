@@ -15,6 +15,7 @@ import copy
 import itertools
 from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_EVEN
 from joblib import Parallel, delayed
+import pandas as pd
 
 from mods.basicfunc import check_exist, check_overwrite
 from mods.parameter import Parameter
@@ -24,41 +25,12 @@ from mods.datagroup import DataGroup
 
 
 # =============== variable =============== #
-DEFAULT_PARAMETER_TYPES = ["AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", "re:^T/^A"]
-DEFAULT_BASE_PAIRS = {"A": "T", "G": "C", "C": "G", "T": "A"}
-VERSION = "6.21.0"
-parameter_types = DEFAULT_PARAMETER_TYPES
-base_pair = DEFAULT_BASE_PAIRS
+VERSION = "7.0"
 iteration = 0
-TEMPLATE_PARAM = "template_ref_param.csv"
-TEMPLATE_EXP = "template_exp.csv"
+
 
 
 # =============== function =============== #
-def make_template(flag_overwrite):
-	"""
-	function to create template files for ref_param.csv and ref_exp.csv
-
-	Args:
-		flag_overwrite (bool): overwrite flag
-	"""
-	if flag_overwrite == False:
-		check_overwrite(TEMPLATE_PARAM)
-	with open(TEMPLATE_PARAM, "w") as obj_output:
-		writer = csv.writer(obj_output)
-		writer.writerow(["Parameter", "dH", "dS", "dG", "", "dH (change)", "dS (change)", "dG (change)", "", "dH (Direction)", "dS (Direction)", "dG (Direction)"])
-		writer.writerows([[param_type, 0.0, 0.0, 0.0, "", True, True, True, "", "", "", ""] for param_type in DEFAULT_PARAMETER_TYPES])
-	sys.stderr.write("{0} is created.\n".format(TEMPLATE_PARAM))
-
-	if flag_overwrite == False:
-		check_overwrite(TEMPLATE_EXP)
-	with open(TEMPLATE_EXP, "w") as obj_output:
-		writer = csv.writer(obj_output)
-		writer.writerow(["Label", "Sequence", "dH", "dH (error)", "dS", "dS (error)", "dG", "dG (error)"])
-	sys.stderr.write("{0} is created.\n".format(TEMPLATE_EXP))
-
-
-
 def calculation_worker(parameter, exp_data, mode, increment, threshold_increment, init_direction, verbose, error_sign = None):
 	# calculate parameter
 	# loop for energy type: dH, dS, and dG
@@ -240,8 +212,11 @@ def read_parameters(input_file, parameters, directions):
 	Returns:
 		list: [obj_Parameter, ...]
 		list: [[direction(int), ...], ...]
+		dict: base_pair
 	"""
 	flag_read = False
+	base_pairs = {}
+	has_problem_base_pair = False
 	with open(input_file, "r") as obj_input:
 		reader = csv.reader(obj_input)
 		for row_val in reader:
@@ -257,22 +232,32 @@ def read_parameters(input_file, parameters, directions):
 
 				parameter_types.append(row_val[0])
 				row_val = [val for val in row_val if val != ""]
-				if "/" in row_val[0] and not row_val[0].startswith("init") \
+				if "/" in row_val[0] \
+				and not row_val[0].startswith("init") \
 				and not row_val[0].startswith("length") \
 				and not row_val[0].startswith("symmetry") \
-				and not row_val[0].startswith("re:"):
+				and not row_val[0].startswith("re:") \
+				and not row_val[0].startswith("reg:"):
 					# lexical analysis for parameter label to base pair
-					bases = row_val[0].split("/", 2)
-					tmp_base_pair = {}
-					tmp_base_pair[bases[0][0:1]] = bases[1][0:1]
-					tmp_base_pair[bases[0][1:2]] = bases[1][1:2]
-					for k, v in tmp_base_pair.items():
-						if k in base_pair.keys():
-							if base_pair[k] != v:
-								sys.stderr.write("ERROR: base pair are duplicated: {0}-{1} vs {0}-{2}.\n".format(k, base_pair[k], tmp_base_pair[k]))
-								sys.exit(1)
+					seq1, seq2 = row_val[0].split("/", 1)
+					list_seq1 = list(seq1)
+					list_seq2 = list(seq2)
+					for base1, base2 in zip(list_seq1, list_seq2):
+						if base1 in base_pairs.keys():
+							if base_pairs[base1] != base2:
+								sys.stderr.write("WARNING: Conflicting base pairs `{0}/{1}` and `{0}/{2}` are found in reading parameter `{3}`.\n".format(base1, base_pairs[base1], base2, row_val[0]))
+								has_problem_base_pair = True
+
 						else:
-							base_pair[k] = v
+							base_pairs[base1] = base2
+
+						if base2 in base_pairs.keys():
+							if base_pairs[base2] != base1:
+								sys.stderr.write("WARNING: Conflicting base pairs `{0}/{1}` and `{0}/{2}` are found in reading parameter `{3}`.\n".format(base2, base_pairs[base2], base1, row_val[0]))
+								has_problem_base_pair = True
+
+						else:
+							base_pairs[base2] = base1
 
 				parameters[0].append_parameter(row_val[0], float(row_val[1]))
 				parameters[1].append_parameter(row_val[0], float(row_val[2]))
@@ -296,18 +281,23 @@ def read_parameters(input_file, parameters, directions):
 					directions[0].append(0)
 					directions[1].append(0)
 					directions[2].append(0)
-	return parameters, directions
+
+	if has_problem_base_pair:
+		sys.stderr.write("WARNING: Because some conflicts were found in base pair information, sequence parameters are determined as mismatched sequences.\n")
+		base_pairs = None
+
+	return parameters, directions, base_pairs
 
 
 # =============== main =============== #
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description="NNfitTool.py", formatter_class=argparse.RawTextHelpFormatter)
 	input_group = parser.add_argument_group("Input")
-	input_group.add_argument("-x", dest="EXPERIMENT_FILE", metavar="EXP.csv", required="--make-template" not in sys.argv,
+	input_group.add_argument("-x", dest="EXPERIMENT_FILE", metavar="EXP.csv", required=True,
 	help = """sequence and experimental value file
 column: Label, Sequence, dH, dH(error), dS, dS(error), dG, and dG(error)
 """)
-	input_group.add_argument("-r", dest="REF_PARAM", metavar="REF_PARAM.csv",
+	input_group.add_argument("-r", dest="REF_PARAM", metavar="REF_PARAM.csv", required=True,
 	help = """referenced parameter values
 column: `Parameter`, `dH`, `dS`, `dG`, space, `dH (change)`, `dS (change)`, `dG (change)`, space, `dH (Direction)`, `dS (Direction)`, and `dG (Direction)`
 `Parameter`: AA/TT, GC/CG, or etc, and re: (regexp) and reg: (counted pattern by regexp)
@@ -317,7 +307,7 @@ e.g., "reg:./." (length parameter)
 """)
 
 	output_group = parser.add_argument_group("Output")
-	output_group.add_argument("-o", dest="OUTPUT_FILE", metavar="OUTPUT.csv", required="--make-template" not in sys.argv, help="output file")
+	output_group.add_argument("-o", dest="OUTPUT_FILE", metavar="OUTPUT.csv", required=True, help="output file")
 	output_group.add_argument("-O", dest="FLAG_OVERWRITE", action="store_true", default=False, help="overwrite forcibly")
 
 	config_group = parser.add_argument_group("Config")
@@ -334,13 +324,8 @@ e.g., "reg:./." (length parameter)
 	misc_group = parser.add_argument_group("Misc")
 	misc_group.add_argument("-t", dest="THREAD", metavar="THREAD", type=int, default=1, help="number of threads for parallel calculation (Default: 1)(Efficient up to 3)")
 	misc_group.add_argument("--verbose", "-v", dest="VERBOSE", action="count", default=0, help="verbose (-v: display results / -vv: display calculation results)")
-	misc_group.add_argument("--make-template", dest="FLAG_MAKE_TEMPLATE", action="store_true", default=False, help="make template files ({0} and {1}) and exit".format(TEMPLATE_PARAM, TEMPLATE_EXP))
 
 	args = parser.parse_args()
-
-	if args.FLAG_MAKE_TEMPLATE:
-		make_template(args.FLAG_OVERWRITE)
-		sys.exit(0)
 
 	# calculate target
 	target_list = [0, 2]	# without dS
@@ -348,54 +333,55 @@ e.g., "reg:./." (length parameter)
 		# with dS
 		target_list = [0, 1, 2]
 
+
 	# initial parameter
 	exp_label = ["dH", "dS", "dG"]
 	parameters = [Parameter().set_name(label) for label in exp_label]
 	parameters_init = []
 	directions = [[] for idx in range(len(exp_label))]
 
+
 	# loading reference parameter
-	if args.REF_PARAM is not None:
-		base_pair = {}
-		parameter_types = []
-		check_exist(args.REF_PARAM, 2)
-		parameters, directions = read_parameters(args.REF_PARAM, parameters, directions)
-
-	else:
-		# define starting parameter by defualt value
-		for obj_parameter in parameters:
-			for parameter_type in parameter_types:
-				obj_parameter.append_parameter(parameter_type, 0.0)
-
-	parameters_init = [copy.deepcopy(parameter) for parameter in parameters]
-
-	new_base_pair = {}
-	for k, v in base_pair.items():
-		new_base_pair[k] = v
-		if v not in base_pair.keys():
-			new_base_pair[v] = k
-	base_pair = new_base_pair
+	parameter_types = []
+	check_exist(args.REF_PARAM, 2)
+	parameters, directions, base_pairs = read_parameters(args.REF_PARAM, parameters, directions)
 
 
 	# reading sequence and experimental data
 	check_exist(args.EXPERIMENT_FILE, 2)
-	exp_datas = [DataGroup(label).set_base_pair(base_pair) for label in exp_label]
-	with open(args.EXPERIMENT_FILE, "r") as obj_input:
-		reader = csv.reader(obj_input)
+	exp_datas = [DataGroup(label) for label in exp_label]
+	sys.stderr.write("Read (experimental file): {}".format(args.EXPERIMENT_FILE))
+	sys.stderr.flush()
+	df_exp = pd.read_csv(args.EXPERIMENT_FILE, header=0)
+	df_exp = df_exp.astype({"dH": float, "dH (error)": float, "dS": float, "dS (error)": float, "dG": float, "dG (error)": float})
+	df_exp = df_exp.fillna({"Comment": "", "dH": 0.0, "dH (error)": 0.0, "dS": 0.0, "dS (error)": 0.0, "dG": 0.0, "dG (error)": 0.0})
+	format_type = 1
+	if "Sequence1" in df_exp.columns and "Sequence2" in df_exp.columns:
+		format_type = 2
+		sys.stderr.write(" (complementary sequences are written by manual)\n".format(format_type))
+		for row in df_exp.itertuples():
+			obj_sequence = Sequence(row[1]).set_sequence(row[2], reversed(row[3]))
+			obj_sequence.get_freq(parameters[0])	# make cache for freq
+			exp_datas[0].append(obj_sequence, row[4], row[5])
+			exp_datas[1].append(obj_sequence, row[6], row[7])
+			exp_datas[2].append(obj_sequence, row[8], row[9])
 
-		# Ignore line number 1 (header) in CSV
-		next(reader)
+	else:
+		sys.stderr.write(" (no complementary sequences)\n".format(format_type))
+		for row in df_exp.itertuples():
+			if base_pairs is None:
+				sys.stderr.write("ERROR: base pair information incomplete.\n")
+				sys.exit(1)
 
-		for line_val in reader:
-			line_val[2:] = [x if x != "" else "0.0" for x in line_val[2:]]
-			obj_sequence = Sequence(line_val[0]).set_sequence(line_val[1], base_pair)
-			exp_datas[0].append(obj_sequence, float(line_val[2]), float(line_val[3]))
-			exp_datas[1].append(obj_sequence, float(line_val[4]), float(line_val[5]))
-			exp_datas[2].append(obj_sequence, float(line_val[6]), float(line_val[7]))
-	sys.stderr.write("Loading experimental values.\n")
+			obj_sequence = Sequence(row[1]).set_sequence(row[2]).generate_complement(base_pairs)
+			obj_sequence.get_freq(parameters[0])	# make cache for freq
+			exp_datas[0].append(obj_sequence, row[3], row[4])
+			exp_datas[1].append(obj_sequence, row[5], row[6])
+			exp_datas[2].append(obj_sequence, row[7], row[8])
 
 
 	# optimize parameter
+	parameters_init = [copy.deepcopy(parameter) for parameter in parameters]
 	for loop_idx in range(args.OPTIMIZE_COUNT):
 		sys.stderr.write("Optimize parameters for {0} times.\n".format(loop_idx + 1))
 		iteration = loop_idx + 1
@@ -614,7 +600,8 @@ e.g., "reg:./." (length parameter)
 		writer.writerow(["<< Sequence >>"])
 		writer.writerow([
 			"Name",
-			"Sequence",
+			"Sequence A (5->3)",
+			"Sequence B (3->5)",
 			"Exp. (dH)",
 			"Exp. (dS)",
 			"Exp. (dG)",
@@ -633,7 +620,8 @@ e.g., "reg:./." (length parameter)
 				exp_datas[1].get_energy(flag_sequence=True, obj_parameters=[parameters[1]], data_type="fix"),
 				exp_datas[2].get_energy(flag_sequence=True, obj_parameters=[parameters[2]], data_type="fix")):
 			name = sequence.name
-			seq = sequence.get_sequence("string")
+			seqA = sequence.get_sequence("string")
+			seqB = sequence.get_complement("string")
 			exp_dH = dH[1]
 			exp_dS = dS[1]
 			exp_dG = dG[1]
@@ -643,8 +631,8 @@ e.g., "reg:./." (length parameter)
 			diff_dH = pred_dH - exp_dH
 			diff_dS = pred_dS - exp_dS
 			diff_dG = pred_dG - exp_dG
-			freq = sequence.get_freq(parameter_types, base_pair)
-			writer.writerow([name, seq, exp_dH, exp_dS, exp_dG, pred_dH, pred_dS, pred_dG, diff_dH, diff_dS, diff_dG] + [""] + [freq[parameter_type] for parameter_type in parameter_types])
+			freq = sequence.get_freq(parameter_types)
+			writer.writerow([name, seqA, seqB, exp_dH, exp_dS, exp_dG, pred_dH, pred_dS, pred_dG, diff_dH, diff_dS, diff_dG] + [""] + [freq[parameter_type] for parameter_type in parameter_types])
 		writer.writerow([""])
 
 		writer.writerow(["Correlation: exp. vs predict", "", "dH", "dS", "dG"])
