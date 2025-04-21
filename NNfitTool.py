@@ -323,7 +323,6 @@ e.g., "reg:./." (length parameter)
 	config_group.add_argument("--one-direction", dest="FLAG_ONE_DIRECTION", action="store_true", default=False, help="Do not search for reverse order pattern (For example, this program searches AC/TG and reverse order pattern GT/CA as the same pattern. This option does not allow it.)")
 	error_group = config_group.add_mutually_exclusive_group()
 	error_group.add_argument("-e", dest="FLAG_ERROR", action="store_true", default=False, help="consider with experimental value with error")
-	error_group.add_argument("-es", dest="FLAG_ERROR_STRICT", action="store_true", default=False, help="strictly consider with experimental value with error")
 
 	misc_group = parser.add_argument_group("Misc")
 	misc_group.add_argument("-t", dest="THREAD", metavar="THREAD", type=int, default=1, help="number of threads for parallel calculation (Default: 1)(Efficient up to 3)")
@@ -463,68 +462,6 @@ e.g., "reg:./." (length parameter)
 			for idx, exp_idx in enumerate(target_list):
 				parameters[exp_idx].update_parameter_error("all", new_parameters[idx*2+0].get_parameter())
 				parameters[exp_idx].update_parameter_error("all", new_parameters[idx*2+1].get_parameter())
-
-		elif args.FLAG_ERROR_STRICT:
-			sys.stderr.write("Optimize parameters with errors by strict mode.\n")
-			max_iter = len(list(itertools.product([-1, 1], repeat = len(exp_datas[0].get_sequence()))))
-			if args.THREAD is not None:
-				for exp_idx in target_list:
-					sys.stderr.write("Calculalte for {0} with error: {1} steps\n".format(exp_label[exp_idx], max_iter))
-					cnt = 0
-					calc_set = []
-					for job_idx, exp_error_pattern in enumerate(itertools.product([-1, 1], repeat = len(exp_datas[0].get_sequence()))):
-						calc_set.append(exp_error_pattern)
-						cnt += 1
-						if 50 <= cnt:
-							cnt = 0
-							parameter_c = Parallel(n_jobs = args.THREAD)([
-								delayed(calculation_worker)(
-									parameter=parameters[exp_idx],
-									exp_data=exp_datas[exp_idx],
-									mode=args.MODE,
-									increment=args.INITIAL_INCREMENT,
-									threshold_increment=args.THRESHOLD_INCREMENT,
-									init_direction=directions[exp_idx],
-									verbose=0,
-									error_sign=exp_error_pattern
-								) for error_pattern in calc_set
-							])
-							for new_parameter in parameter_c:
-								parameters[exp_idx].update_parameter_error("all", new_parameter.get_parameter())
-							calc_set = []
-							sys.stderr.write("calculation of {0} with error for {1}-{2}.\n".format(exp_label[exp_idx], job_idx + 1 - 50, job_idx + 1))
-
-					if len(calc_set) != 0:
-						parameter_c = Parallel(n_jobs=args.THREAD)([
-							delayed(calculation_worker)(
-								parameter=parameters[exp_idx],
-								exp_data=exp_datas[exp_idx],
-								mode=args.MODE,
-								increment=args.INITIAL_INCREMENT,
-								threshold_increment=args.THRESHOLD_INCREMENT,
-								init_direction=directions[exp_idx],
-								verbose=0,
-								error_sign=exp_error_pattern
-							) for error_pattern in calc_set
-						])
-						for new_parameter in parameter_c:
-							parameters[exp_idx].update_parameter_error("all", new_parameter.get_parameter())
-
-			else:
-				for exp_idx in target_list:
-					# exp values with error
-					for exp_error_pattern in itertools.product([-1, 1], repeat=len(exp_datas[0].get_sequence())):
-						new_parameter = calculation_worker(
-							parameter=parameters[exp_idx],
-							exp_data=exp_datas[exp_idx],
-							mode=args.MODE,
-							increment=args.INITIAL_INCREMENT,
-							threshold_increment=args.THRESHOLD_INCREMENT,
-							init_direction=directions[exp_idx],
-							verbose=args.VERBOSE,
-							error_sign=exp_error_pattern
-						)
-						parameters[exp_idx].update_parameter_error("all", new_parameter.get_parameter())
 
 	if not args.FLAG_SEPARATE and exp_datas[0].is_fitting and exp_datas[1].is_fitting:
 		# calculate dS: (dH - dG) / T * 1000
