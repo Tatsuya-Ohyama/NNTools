@@ -52,7 +52,7 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 			evaluation_val_direction = []
 			evaluation_val_tmp = []
 			if direction[parameter_idx] == 0:
-				# When not determine direction, determined direction
+				# When not determine increment direction
 				# create 0,+,- changed parameter object
 				parameter_plus = parameters_opt[parameter_idx].clone()
 				parameter_plus.set_name(parameter_type + "_plus")
@@ -61,7 +61,7 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 				parameter_minus.set_name(parameter_type + "_minus")
 				parameter_minus.set_parameter(parameter_type, parameter_minus.get_parameter(parameter_type)[0] - increment)
 
-				# evaluation
+				# evaluation for incremented parameter
 				if error_sign is None:
 					evaluation_prev[parameter_idx] = exp_data.get_stat(parameters_opt[parameter_idx], mode)
 					evaluation_val_direction.append(evaluation_prev[parameter_idx])
@@ -74,7 +74,7 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 					evaluation_val_direction.append(exp_data.get_stat(parameter_minus, mode, error_sign=error_sign))
 				evaluation_val_tmp.append(evaluation_prev[parameter_idx])
 
-				# determine direction
+				# determine increment direction
 				min_val = min(evaluation_val_direction)
 				min_val_idx = [i for i, x in enumerate(evaluation_val_direction) if min_val == x]
 				if len(min_val_idx) != 1 or min_val_idx[0] == 0:
@@ -427,7 +427,7 @@ e.g., "reg:./." (length parameter)
 			positive = [-1 for x in range(len(exp_datas[0].get_sequence()))]
 			new_parameters = []
 
-			if args.THREAD is not None:
+			if 1 < args.THREAD:
 				# multi-thread
 				new_parameters = Parallel(n_jobs=args.THREAD)([
 					delayed(calculation_worker)(
