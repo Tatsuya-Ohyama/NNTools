@@ -68,10 +68,10 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 					evaluation_val_direction.append(exp_data.get_stat(parameter_plus, mode))
 					evaluation_val_direction.append(exp_data.get_stat(parameter_minus, mode))
 				else:
-					evaluation_prev[parameter_idx] = exp_data.get_stat(parameters_opt[parameter_idx], mode, error_sign = error_sign)
+					evaluation_prev[parameter_idx] = exp_data.get_stat(parameters_opt[parameter_idx], mode, error_sign=error_sign)
 					evaluation_val_direction.append(evaluation_prev[parameter_idx])
-					evaluation_val_direction.append(exp_data.get_stat(parameter_plus, mode, error_sign = error_sign))
-					evaluation_val_direction.append(exp_data.get_stat(parameter_minus, mode, error_sign = error_sign))
+					evaluation_val_direction.append(exp_data.get_stat(parameter_plus, mode, error_sign=error_sign))
+					evaluation_val_direction.append(exp_data.get_stat(parameter_minus, mode, error_sign=error_sign))
 				evaluation_val_tmp.append(evaluation_prev[parameter_idx])
 
 				# determine direction
@@ -110,8 +110,8 @@ def calculation_worker(parameter, exp_data, mode, increment, threshold_increment
 					evaluation_val_tmp.append(exp_data.get_stat(parameters_opt[parameter_idx], mode))
 					evaluation_val_tmp.append(exp_data.get_stat(parameter_new, mode))
 				else:
-					evaluation_val_tmp.append(exp_data.get_stat(parameters_opt[parameter_idx], mode, error_sign = error_sign))
-					evaluation_val_tmp.append(exp_data.get_stat(parameter_new, mode, error_sign = error_sign))
+					evaluation_val_tmp.append(exp_data.get_stat(parameters_opt[parameter_idx], mode, error_sign=error_sign))
+					evaluation_val_tmp.append(exp_data.get_stat(parameter_new, mode, error_sign=error_sign))
 
 			# choose parameter from statistics values (minimum value)
 			min_val = min(evaluation_val_tmp)
@@ -461,8 +461,8 @@ e.g., "reg:./." (length parameter)
 						))
 
 			for idx, exp_idx in enumerate(target_list):
-				parameters[exp_idx].update_parameter_error("all", new_parameters[idx * 2 + 0].get_parameter())
-				parameters[exp_idx].update_parameter_error("all", new_parameters[idx * 2 + 1].get_parameter())
+				parameters[exp_idx].update_parameter_error("all", new_parameters[idx*2+0].get_parameter())
+				parameters[exp_idx].update_parameter_error("all", new_parameters[idx*2+1].get_parameter())
 
 		elif args.FLAG_ERROR_STRICT:
 			sys.stderr.write("Optimize parameters with errors by strict mode.\n")

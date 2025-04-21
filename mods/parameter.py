@@ -138,7 +138,7 @@ class Parameter:
 		for parameter_type in parameter_types:
 			# loop for parameter types
 			if self._change[parameter_type]:
-				# when chang flag is True
+				# when change flag is True
 				if parameter_values[parameter_type][0] < self._parameters[parameter_type][1]:
 					# update minimum value
 					self._parameters[parameter_type][1] = parameter_values[parameter_type][0]
