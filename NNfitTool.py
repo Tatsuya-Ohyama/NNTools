@@ -24,8 +24,9 @@ from mods.datagroup import DataGroup
 
 
 # =============== variable =============== #
-VERSION = "7.1"
+VERSION = "7.2"
 iteration = 0
+ERROR_MIN = 0.001
 
 
 
@@ -341,7 +342,7 @@ e.g., "reg:./." (length parameter)
 	exp_label = ["dH", "dS", "dG"]
 	parameters = [Parameter().set_name(label) for label in exp_label]
 	parameters_init = []
-	directions = [[] for idx in range(len(exp_label))]
+	directions = [[] for _ in range(len(exp_label))]
 
 
 	# loading reference parameter
@@ -528,9 +529,9 @@ e.g., "reg:./." (length parameter)
 
 			writer.writerow([
 				parameter_type,
-				parameter_dH[0], parameter_dH[1],
-				parameter_dS[0], parameter_dS[1],
-				parameter_dG[0], parameter_dG[1],
+				parameter_dH[0], parameter_dH[1] if parameter_dH[1] != 0 else ERROR_MIN,
+				parameter_dS[0], parameter_dS[1] if parameter_dS[1] != 0 else ERROR_MIN,
+				parameter_dG[0], parameter_dG[1] if parameter_dG[1] != 0 else ERROR_MIN,
 				"",
 				parameters[0].is_change(parameter_type),
 				parameters[1].is_change(parameter_type),
