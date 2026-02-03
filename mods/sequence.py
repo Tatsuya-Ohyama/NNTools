@@ -162,19 +162,17 @@ class Sequence:
 			# check parameter_types
 			for param in parameter_types:
 				# special penalty
-				if param.startswith("init"):
-					# initiation parameter
-					list_init = [self._sequence[0] + self._complement[0], self._complement[0] + self._sequence[0]]
-					if param.replace("init_", "") in list_init:
-						self._cache_freq[param] += 1
-
-				elif param.startswith("length"):
+				if param.startswith("length"):
 					# length parameter
 					self._cache_freq[param] = len(self._sequence)
 
 				elif param.startswith("symmetry"):
 					# symmetry parameter
 					if self._is_self_complement:
+						self._cache_freq[param] += 1
+
+				elif param.startswith("non-symmetry"):
+					if not self._is_self_complement:
 						self._cache_freq[param] += 1
 
 				elif param.startswith("re:"):

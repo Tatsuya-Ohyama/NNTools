@@ -53,7 +53,7 @@ class Parameter:
 		Method to append parameter with error
 
 		Args:
-			parameter_type (str): parameter name ("AA/TT", "AT/TA", ..., "init_XX", "symmetry", or "5term_TA (by regexp)")
+			parameter_type (str): parameter name ("AA/TT", "AT/TA", ..., "length", "symmetry", or "non-symmetry")
 			parameter_val (list): [param(float), param_min(float), param_max(float)]
 
 		Returns:
@@ -69,7 +69,7 @@ class Parameter:
 		Method to set parameter with error
 
 		Args:
-			parameter_type (str): parameter name (all, "AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "init_GC", "init_AT", "symmetry", or "5term_TA (by regexp)")
+			parameter_type (str): parameter name (all, "AA/TT", "AT/TA", "TA/AT", "CA/GT", "GT/CA", "CT/GA", "GA/CT", "CG/GC", "GC/CG", "GG/CC", "length", "symmetry", or "non-symmetry")
 			parameter_val (float, optional): [param(float), param_min(float), param_max(float)] (Default: None)
 
 		Returns:
@@ -234,7 +234,7 @@ class Parameter:
 		elif data_type == "name":
 			return self._parameters.keys()
 		else:
-			sys.stderr.write("ERROR: Undefined data_type at get_parameter() in Parameter class.\n".format(data_type))
+			sys.stderr.write("ERROR: Undefined data_type at get_parameter() in Parameter class ({0}).\n".format(data_type))
 			sys.exit(1)
 
 		if parameter_type is None:

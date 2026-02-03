@@ -24,7 +24,7 @@ from mods.datagroup import DataGroup
 
 
 # =============== variable =============== #
-VERSION = "7.2"
+VERSION = "7.3"
 iteration = 0
 ERROR_MIN = 0.001
 

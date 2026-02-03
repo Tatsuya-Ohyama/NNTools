@@ -74,16 +74,22 @@ $ NNfitTool.py [-h] -x EXP.csv -r REF_PARAM.csv -o OUTPUT.csv [-O] [-d THRESHOLD
 	* `-r REF_PARAM.csv`
 		: referenced parameter values
 
-		* column: `Parameter`, `dH`, `dS`, `dG`, space, `dH (change)`, `dS (change)`, `dG (change)`, space, `dH (Direction)`, `dS (Direction)`, and `dG (Direction)`
-			* `Parameter`: `AA/TT`, `GC/CG`, or etc, and `re:` (regexp) and `reg:` (counted pattern by regexp)
-				* e.g., `re:^A/^T` and `re:^T/^A` (initial parameter for A/T (both specification require))
-				* e.g., `reg:.*?G.*?/.*?C.*?` (number of G/C pair parameter)
-				* e.g., `reg:./.` (length parameter)
-			* `dH`: initial $\Delta H$
-			* `dS`: initial $\Delta S$
-			* `dG`: initial $\Delta G$
-			* `dH(change)` / `dS(change)` / `dG(change)`: whether the parameter changes is allowed during parameter fitting. (Default: `TRUE` (allow))
-			* `dH (Direction)` / `dS (Direction)` / `dG (Direction)`: direction of the parameter change during parameter fitting (0: change to positive or negative / 1: change only to positive / 2: change only to negative)
+		* column: `Parameter`, `dH`, `dS`, `dG`, space, `dH (change)`, `dS (change)`, `dG (change)`, space, `dH (direction)`, `dS (direction)`, and `dG (direction)`
+			* `Parameter`:
+				* `AA/TT`, `GC/CG`, ...: regular NN parameter
+				* `re:`: NN parameter defined by regular expression
+					* e.g., `re:^./^.`: (initiatial parameter with any pair)
+					* e.g., `re:^A/^T` and `re:^T/^A` (initial parameter for A/T (both specification require))
+				* `reg:`: NN parameter defined by regular expression (counted pattern by regular expression match)
+					* e.g., `reg:.*?G.*?/.*?C.*?` (number of G/C pair parameter)
+					* e.g., `reg:(^[AU])|([AU]$)/(^[AU])|([AU]$)` (per terminal AU)
+				* `symmetry`: complementary sequence
+				* `non-symmetry`: non-complementary sequence
+			* `dH`: initial $\Delta H$ for searching
+			* `dS`: initial $\Delta S$ for searching
+			* `dG`: initial $\Delta G$ for searching
+			* `dH (change)` / `dS (change)` / `dG (change)`: whether the parameter changes is allowed during parameter fitting. (Default: `TRUE` (allow))
+			* `dH (direction)` / `dS (direction)` / `dG (direction)`: direction of the parameter change during parameter fitting (0: change to positive or negative / 1: change only to positive / -1: change only to negative)
 
 * Output:
 	* `-o OUTPUT.csv`
@@ -161,6 +167,11 @@ Copyright (c) 2019 Tatsuya Ohyama
 
 
 ## ChangeLog
+### Ver. 7.3 (2026-02-03)
+* Deprecated the use of the `init` and `init_` parameters (they are now replaced by parameters specified using regular expressions with the `re:` prefix).
+* Add `non-symmetry` parameter.
+* Fixed a critical bug that caused `NNcalcTool.py` to fail (now compatible with the latest module).
+
 ### Ver. 7.2 (2026-02-03)
 * Set the error value for overfitting to 0.001.
 * Update template file.
