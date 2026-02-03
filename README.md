@@ -161,22 +161,26 @@ Copyright (c) 2019 Tatsuya Ohyama
 
 
 ## ChangeLog
+### Ver. 7.2 (2026-02-03)
+* Set the error value for overfitting to 0.001.
+* Update template file.
+
 ### Ver. 7.1.1 (2026-02-03)
-* fix a bug that failed to reflect changes to the module path in NNcalcTools.py
+* Fix a bug that failed to reflect changes to the module path in NNcalcTools.py
 
 ### Ver. 7.1 (2024-06-23)
-* add `--one-direction` option.
-* change generation algorithm of pair from sequence.
+* Add `--one-direction` option.
+* Change generation algorithm of pair from sequence.
 
 ### Ver. 7.0 (2024-06-02)
-* support for mismatch sequence
-	* add `template_exp_mismatch.csv`
+* Support for mismatch sequence
+	* Add `template_exp_mismatch.csv`
 
 ### Ver. 6.21 (2023-10-23)
-* fix bug that do not use medium of parameter for prediction value at `<< Sequence >>` section
+* Fix bug that do not use medium of parameter for prediction value at `<< Sequence >>` section
 
 ### Ver. 6.20 (2023-09-26)
-* small changes for NNfitTool.py
+* Small changes for NNfitTool.py
 
 ### Ver. 6.19 (2022-03-31)
-* add README.md
+* Add README.md
