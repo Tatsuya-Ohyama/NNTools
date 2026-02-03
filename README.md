@@ -43,9 +43,9 @@ $ NNcalcTool.py [-h] -s SEQUENCE_FILE.csv -p PARAMETER_FILE.csv -o OUTPUT_FILE.c
 * `--make-template`
 	: make template files (`template_ref_param.csv` and `template_sequence.csv`) and exit
 
-		```sh
-		$ NNcalcTool.py --make-template
-		```
+	```sh
+	$ NNcalcTool.py --make-template
+	```
 
 ### NNfitTool.py
 
@@ -161,6 +161,9 @@ Copyright (c) 2019 Tatsuya Ohyama
 
 
 ## ChangeLog
+### Ver. 7.1.1 (2026-02-03)
+* fix a bug that failed to reflect changes to the module path in NNcalcTools.py
+
 ### Ver. 7.1 (2024-06-23)
 * add `--one-direction` option.
 * change generation algorithm of pair from sequence.
