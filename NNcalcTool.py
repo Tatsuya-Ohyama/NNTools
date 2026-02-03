@@ -20,7 +20,7 @@ from mods.sequence import Sequence
 
 
 # =============== variable =============== #
-VERSION = "1.1"
+VERSION = "1.2"
 TEMPLATE_PARAM = "template_ref_param.csv"
 TEMPLATE_SEQUENCE = "template_sequence.csv"
 LIMIT_LEN_SEQUENCE = 100
@@ -70,7 +70,7 @@ def read_sequence_csv(input_file, base_pair):
 				continue
 
 			if flag_read:
-				sequences.append(Sequence(line_val[0]).set_sequence(line_val[1].upper(), base_pair))
+				sequences.append(Sequence(line_val[0]).set_sequence(line_val[1].upper()).generate_complement(base_pair))
 	return sequences
 
 
@@ -101,17 +101,17 @@ def read_sequence_fasta(input_file, base_pair, flag_skip):
 							num = 1
 							base_name = sequences[-1].name
 							sequences[-1].set_name("{0} ({1})".format(base_name, num))
-							sequences[-1].set_sequence(standard_sequences[0], base_pair)
+							sequences[-1].set_sequence(standard_sequences[0]).generate_complement(base_pair)
 							for seq in standard_sequences[1:]:
 								if len(seq) == 1:
 									continue
 
 								num += 1
-								sequences.append(Sequence("{0} ({1})".format(base_name, num)).set_sequence(seq, base_pair))
+								sequences.append(Sequence("{0} ({1})".format(base_name, num)).set_sequence(seq).generate_complement(base_pair))
 							sequence = ""
 							continue
 
-					sequences[-1].set_sequence(sequence, base_pair)
+					sequences[-1].set_sequence(sequence).generate_complement(base_pair)
 					sequence = ""
 
 				# create new sequence object
@@ -122,7 +122,7 @@ def read_sequence_fasta(input_file, base_pair, flag_skip):
 				sequence += line_val.strip().upper()
 
 		if sequence != "":
-			sequences[-1].set_sequence(sequence, base_pair)
+			sequences[-1].set_sequence(sequence).generate_complement(base_pair)
 
 	return sequences
 
@@ -153,7 +153,6 @@ if __name__ == '__main__':
 	base_pair = {}
 	with open(args.FILE_PARAMETER, "r") as obj_input:
 		flag_read = False
-		flag_init = False
 		reader = csv.reader(obj_input)
 		for line_val in reader:
 			if "Parameter" in line_val[0]:
@@ -165,7 +164,7 @@ if __name__ == '__main__':
 				break
 
 			if flag_read:
-				if "/" in line_val[0] and not line_val[0].startswith("init") and not line_val[0].startswith("length") and not line_val[0].startswith("symmetry") and not line_val[0].startswith("re:") and not line_val[0].startswith("reg:"):
+				if "/" in line_val[0] and not line_val[0].startswith("length") and not line_val[0].startswith("re:") and not line_val[0].startswith("reg:"):
 					# generate base_pair
 					base = line_val[0].split("/", 2)
 					tmp_base_pair = {}
@@ -222,14 +221,13 @@ if __name__ == '__main__':
 			obj_output.write("Output file: {0}\n".format(args.FILE_OUTPUT))
 			obj_output.write("\n")
 
-
 	with open(args.FILE_OUTPUT, "w") as obj_output:
 		writer = csv.writer(obj_output)
 		parameter_types = list(parameters[0].get_parameter(data_type="name"))
 		writer.writerow(["Comment", "Sequence"] + [param.name for param in parameters] + [""] + parameter_types)
 		for sequence in sequences:
 			freq = sequence.get_freq(parameters[0], base_pair)
-			energy = [sequence.get_energy(param, base_pair) for param in parameters]
+			energy = [sequence.get_energy(param) for param in parameters]
 			seq = sequence.get_sequence("string")
 			if len(seq) > LIMIT_LEN_SEQUENCE:
 				seq = seq[:LIMIT_LEN_SEQUENCE] + "..."
