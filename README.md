@@ -43,14 +43,14 @@ $ NNcalcTool.py [-h] -s SEQUENCE_FILE.csv -p PARAMETER_FILE.csv -o OUTPUT_FILE.c
 * `--make-template`
 	: make template files (`template_ref_param.csv` and `template_sequence.csv`) and exit
 
-		```sh
-		$ NNcalcTool.py --make-template
-		```
+	```sh
+	$ NNcalcTool.py --make-template
+	```
 
 ### NNfitTool.py
 
 ```sh
-$ NNfitTool.py [-h] -x EXP.csv -r REF_PARAM.csv -o OUTPUT.csv [-O] [-d THRESHOLD] [-i INITIAL_INCREMENT] [-T TEMPERATURE] [-m EVALUATION_METHOD] [-S] [-I LOOP_COUNT] [--one-direction] [-e | -es] [-t THREAD] [--verbose]
+$ NNfitTool.py [-h] -x EXP.csv -r REF_PARAM.csv -o OUTPUT.csv [-O] [-d THRESHOLD] [-i INITIAL_INCREMENT] [-T TEMPERATURE] [-m EVALUATION_METHOD] [-S] [-I LOOP_COUNT] [--one-direction] [-e] [-t THREAD] [--verbose]
 ```
 
 * Common
@@ -106,8 +106,6 @@ $ NNfitTool.py [-h] -x EXP.csv -r REF_PARAM.csv -o OUTPUT.csv [-O] [-d THRESHOLD
 		: the number of looping optimize (Default: 1)
 	* `-e`
 		: consider with experimental value with error
-	* `-es` (not implement)
-		: strictly consider with experimental value with error
 	* `--one-direction`
 		: Do not search for reverse order pattern (For example, this program searches AC/TG and reverse order pattern GT/CA as the same pattern. This option does not allow it.) (For mismatch or manual operation)
 
@@ -163,6 +161,9 @@ Copyright (c) 2019 Tatsuya Ohyama
 
 
 ## ChangeLog
+### Ver. 7.1.1 (2026-02-03)
+* fix a bug that failed to reflect changes to the module path in NNcalcTools.py
+
 ### Ver. 7.1 (2024-06-23)
 * add `--one-direction` option.
 * change generation algorithm of pair from sequence.
