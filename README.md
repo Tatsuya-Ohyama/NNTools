@@ -199,6 +199,9 @@ Copyright (c) 2019 Tatsuya Ohyama
 
 
 ## ChangeLog
+### Ver. 20260607
+* add NNfitTool_MC.py
+
 ### Ver. 7.3 (2026-02-03)
 * Deprecated the use of the `init` and `init_` parameters (they are now replaced by parameters specified using regular expressions with the `re:` prefix).
 * Add `non-symmetry` parameter.
