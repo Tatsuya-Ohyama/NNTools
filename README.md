@@ -5,6 +5,7 @@ Group of programs to calculate nearest-neighbor parameters for nucleic acids
 
 * `NNcalcTool.py`: Program to calculate various energies of nucleic acids from parameters
 * `NNfitTool.py`: Program for fitting parameters from experimental values
+* `NNfitTool.py`: Program for fitting parameters from experimental values using Least square solver and Monte Carlo method
 * `NNcountTool.py`: Program to count NN pairs
 
 
@@ -127,6 +128,36 @@ $ NNfitTool.py [-h] -x EXP.csv -r REF_PARAM.csv -o OUTPUT.csv [-O] [-d THRESHOLD
 			$ NNfitTool.py --make-template
 			```
 
+### NNfitTool_MC.py
+```sh
+usage: NNfitTool_MC.py [-h] -x EXP.csv -r REF_PARAM.csv -o OUTPUT.csv [--mc MC_ITERATION] [-S] -T TEMPERATURE [--noise {normal,uniform}] [--seed SEED] [-e] [--debug_dir DEBUG_DIR]
+```
+
+* `-h`, `--help`
+	: show this help message and exit
+* `-x EXP.csv`
+	: sequence and experimental value file column: Label, Sequence, dH, dH(error), dS, dS(error), dG, and dG(error)
+* `-r REF_PARAM.csv`
+	: referenced parameter values column: `Parameter`, `dH`, `dS`, `dG`, space, `dH (change)`, `dS (change)`, `dG (change)`, space, `dH (Direction)`, `dS (Direction)`, and `dG (Direction)` `Parameter`: AA/TT, GC/CG, or etc, and re: (regexp) and reg: (counted pattern by regexp) e.g., "re:^A/^T" and "re:^T/^A" (initial parameter for A/T (both specification require)) e.g., "reg:.*?G.*?/.*?C.*?" (number of G/C pair parameter) e.g., "reg:./." (length parameter)
+* `-o OUTPUT.csv`
+	: output file
+* `--mc MC_ITERATION`
+	: Number of Monte Carlo replicates
+* `-S`
+	: Separately calculate dS (Default: OFF (dS is calculated by Gibbs free energy equation))
+* `-T TEMPERATURE`
+	: temperature for experimental data (Default: 310.15)
+* `--noise {normal,uniform}`
+	: Noise model for sampling experimental values
+* `--seed SEED`
+	: Random seed
+* `-e`, `--error`
+	: consider with experimental value with error using least square and MC; return the fitting parameters of least square with not -e option
+* `-O`
+	: overwrite forcibly
+* `--debug_dir DEBUG_DIR`
+	: debug directory
+
 
 ### NNcountTool.py
 
@@ -154,6 +185,7 @@ $ NNcountTool.py [-h] -f SEQUENCE_FILE.fasta [SEQUENCE_FILE.fasta ...] -p PARAME
 	* numpy
 	* pandas
 	* joblib
+	* scipy
 
 
 ## License

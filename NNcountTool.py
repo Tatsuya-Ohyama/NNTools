@@ -13,7 +13,7 @@ import argparse
 import csv
 import re
 
-from classes.basicfunc import check_exist, check_overwrite
+from mods.basicfunc import check_exist, check_overwrite
 
 
 
